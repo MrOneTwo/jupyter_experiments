@@ -34,33 +34,20 @@ def __(data_unpacked, np, plt):
     FREQUENCY = 32 * 1000
     BYTES_PER_SAMPLE = 2
 
-    data_to_plot = data_float
+    _data_to_plot = data_float
     dt = 1.0 /FREQUENCY
-    t = np.arange(0, len(data_to_plot), 1)
+    _t = np.arange(0, len(_data_to_plot), 1)
 
-    fig, axs = plt.subplots(len((data_to_plot, [])))
+    _fig, _axs = plt.subplots(len((_data_to_plot, [])))
 
-    for i, data in enumerate((data_to_plot, )):
-        axs[i].set_ylim([data.mean() - 0.05, data.mean() + 0.05])
-        axs[i].plot(t, data, linewidth=0.1)
-        axs[i].set(xlabel='sample', ylabel='val', title='Soundwave plot')
-        axs[i].grid(color='k', alpha=0.2, linestyle='-.', linewidth=0.5)
+    for _i, _data in enumerate((_data_to_plot, )):
+        _axs[_i].set_ylim([_data.mean() - 0.05, _data.mean() + 0.05])
+        _axs[_i].plot(_t, _data, linewidth=0.1)
+        _axs[_i].set(xlabel='sample', ylabel='val', title='Soundwave plot')
+        _axs[_i].grid(color='k', alpha=0.2, linestyle='-.', linewidth=0.5)
 
-    fig
-
-    return (
-        BYTES_PER_SAMPLE,
-        FREQUENCY,
-        axs,
-        data,
-        data_float,
-        data_to_plot,
-        dt,
-        fig,
-        i,
-        normalize_data,
-        t,
-    )
+    _fig
+    return BYTES_PER_SAMPLE, FREQUENCY, data_float, dt, normalize_data
 
 
 @app.cell
@@ -72,6 +59,78 @@ def __(mo):
     \]
     """)
     return
+
+
+@app.cell
+def __(np, plt):
+    from dataclasses import dataclass
+    from matplotlib.ticker import MultipleLocator, AutoMinorLocator
+
+
+    @dataclass
+    class Waveform:
+        cycles: int
+        amplitude: int = 1
+        # This will impact how many frequencies FFT analyzes.
+        resolution: int = 200
+
+        def get_wave(self):
+            length = np.pi * 2 * self.cycles
+            t = np.arange(0, length, length / self.resolution)
+            return t, self.amplitude * np.sin(t)
+
+
+    _t, harmonic01 = Waveform(cycles=4, amplitude=1).get_wave()
+    _, harmonic02 = Waveform(cycles=12, amplitude=2).get_wave()
+    # _, waveform03 = Waveform(cycles=5).get_wave()
+
+    waveform = harmonic01 + harmonic02
+
+    harmonics = np.zeros(len(_t))
+    _N = len(waveform)
+
+    for k, j in enumerate(range(_N)):
+        potential_harmonic = 0
+        for i, x in enumerate(waveform):
+            n = i
+            potential_harmonic += x * np.sin(np.pi * 2 * (k / _N) * n)
+        print(f"harmonic {j} is {potential_harmonic}")
+        # Dividing by N means normalizing the result.
+        harmonics[j] = potential_harmonic / _N
+
+    data_to_plot = (harmonic01, harmonic02, waveform, harmonics)
+    _fig, _axs = plt.subplots(len(data_to_plot), figsize=(14, 14))
+
+    for i, data in enumerate(data_to_plot[:-1]):
+        _axs[i].set_ylim([data.min() - 0.4, data.max() + 0.4])
+        _axs[i].plot(_t, data, linewidth=0.5)
+        # _axs[i].set(xlabel='sample', ylabel='val', title='Soundwave plot')
+        _axs[i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+
+    _axs[-1].bar(np.arange(len(harmonics)), harmonics)
+    _axs[-1].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+    _axs[-1].xaxis.set_major_locator(MultipleLocator(10))
+    _axs[-1].xaxis.set_minor_locator(MultipleLocator(5))
+
+    _fig
+    return (
+        AutoMinorLocator,
+        MultipleLocator,
+        Waveform,
+        data,
+        data_to_plot,
+        dataclass,
+        harmonic01,
+        harmonic02,
+        harmonics,
+        i,
+        j,
+        k,
+        n,
+        potential_harmonic,
+        waveform,
+        x,
+    )
 
 
 if __name__ == "__main__":
