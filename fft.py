@@ -153,5 +153,11 @@ def __(np, plt, samples_count_slider):
     )
 
 
+@app.cell
+def __(harmonics, mo):
+    mo.md(f"Checked {len(harmonics)} possible harmonics")
+    return
+
+
 if __name__ == "__main__":
     app.run()
