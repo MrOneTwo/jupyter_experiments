@@ -5,6 +5,12 @@ app = marimo.App()
 
 
 @app.cell
+def __(mo):
+    mo.md("# Fourier Transform")
+    return
+
+
+@app.cell
 def __():
     import marimo as mo
     from pathlib import Path
@@ -69,7 +75,7 @@ def __(mo):
 
 @app.cell
 def __(mo):
-    samples_count_slider = mo.ui.slider(start=1, stop=1000, value=200, label="Samples count")
+    samples_count_slider = mo.ui.slider(start=1, stop=400, value=200, label="Samples count")
     mo.md(f"{samples_count_slider}")
     return samples_count_slider,
 
