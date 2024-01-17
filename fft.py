@@ -88,22 +88,22 @@ def __(np, numpy, plt, samples_count_slider):
 
     @dataclass
     class Waveform:
-        cycles: int
+        frequency: int
         amplitude: int = 1
         # This will impact how many frequencies FFT analyzes.
         resolution: int = 200
 
         def get_wave(self):
-            length = np.pi * 2 * self.cycles
+            length = np.pi * 2 * self.frequency
             t = np.arange(0, length, length / self.resolution)
             return t, self.amplitude * np.sin(t)
 
 
     _t, harmonic01 = Waveform(
-        cycles=4, amplitude=1, resolution=int(samples_count_slider.value)
+        frequency=4, amplitude=1, resolution=int(samples_count_slider.value)
     ).get_wave()
     _, harmonic02 = Waveform(
-        cycles=12, amplitude=2, resolution=int(samples_count_slider.value)
+        frequency=12, amplitude=2, resolution=int(samples_count_slider.value)
     ).get_wave()
     # _, waveform03 = Waveform(cycles=5).get_wave()
 
