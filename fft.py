@@ -160,13 +160,24 @@ def __(np, numpy, plt, samples_count_slider):
 
 @app.cell
 def __(harmonics, mo):
-    mo.md(f"Checked {len(harmonics)} possible harmonics")
-    return
+    def filter_harmonics(harmonics):
+        valid_harmonics = []
+        for i, h in enumerate(harmonics):
+            if h > 0.001 or h < -0.001:
+                valid_harmonics.append((i, h))
+
+        return valid_harmonics
+
+
+    mo.md(
+        f"Checked {len(harmonics)} possible harmonics: {filter_harmonics(harmonics)}"
+    )
+    return filter_harmonics,
 
 
 @app.cell
 def __(mo):
-    mo.md("The spectrum graph is mirrored. That's because the samples of the originally sampled signal match with the sinusoid of those higher frequencies too.")
+    mo.md("The spectrum graph is mirrored. That's because the samples of the originally sampled signal match with the sinusoid of those higher frequencies too. The frequencies in the middle is the Nyquist Rate.")
     return
 
 
