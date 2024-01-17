@@ -75,7 +75,7 @@ def __(mo):
 
 @app.cell
 def __(mo):
-    samples_count_slider = mo.ui.slider(start=1, stop=400, value=200, label="Samples count")
+    samples_count_slider = mo.ui.slider(start=1, stop=400, value=200, label="Samples count", debounce=True)
     mo.md(f"{samples_count_slider}")
     return samples_count_slider,
 
