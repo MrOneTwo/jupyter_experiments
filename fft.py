@@ -132,7 +132,7 @@ def __(np, numpy, plt, samples_count_slider):
 
     for i, data in enumerate(data_to_plot[:-1]):
         _axs[i].set_ylim([data.min() - 0.4, data.max() + 0.4])
-        _axs[i].plot(_t, data, linewidth=0.5)
+        _axs[i].plot(_t, data, linewidth=0.7, linestyle="solid", marker="o")
         # _axs[i].set(xlabel='sample', ylabel='val', title='Soundwave plot')
         _axs[i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
@@ -166,7 +166,7 @@ def __(harmonics, mo):
 
 @app.cell
 def __(mo):
-    mo.md("Here's discussion on why the resulting spectrum graph is mirrored. https://dsp.stackexchange.com/questions/4825/why-is-the-fft-mirrored")
+    mo.md("The spectrum graph is mirrored. That's because the samples of the originally sampled signal match with the sinusoid of those higher frequencies too.")
     return
 
 
