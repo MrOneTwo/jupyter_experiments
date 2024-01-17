@@ -63,6 +63,8 @@ def __(mo):
     \[
     X_k = \sum_{n=0}^{N-1} x_n \sin(2\pi\frac{k}{N}n)
     \]
+
+    N - is the total samples count.
     """)
     return
 
