@@ -164,5 +164,11 @@ def __(harmonics, mo):
     return
 
 
+@app.cell
+def __(mo):
+    mo.md("Here's discussion on why the resulting spectrum graph is mirrored. https://dsp.stackexchange.com/questions/4825/why-is-the-fft-mirrored")
+    return
+
+
 if __name__ == "__main__":
     app.run()
