@@ -62,7 +62,20 @@ def __(mo):
 
 
 @app.cell
-def __(np, plt):
+def __(mo):
+    mo.md(r"""You can control the samples count for the following waveforms.""")
+    return
+
+
+@app.cell
+def __(mo):
+    samples_count_slider = mo.ui.slider(start=1, stop=1000, value=200, label="Samples count")
+    mo.md(f"{samples_count_slider}")
+    return samples_count_slider,
+
+
+@app.cell
+def __(np, plt, samples_count_slider):
     from dataclasses import dataclass
     from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
@@ -80,8 +93,8 @@ def __(np, plt):
             return t, self.amplitude * np.sin(t)
 
 
-    _t, harmonic01 = Waveform(cycles=4, amplitude=1).get_wave()
-    _, harmonic02 = Waveform(cycles=12, amplitude=2).get_wave()
+    _t, harmonic01 = Waveform(cycles=4, amplitude=1, resolution=int(samples_count_slider.value)).get_wave()
+    _, harmonic02 = Waveform(cycles=12, amplitude=2, resolution=int(samples_count_slider.value)).get_wave()
     # _, waveform03 = Waveform(cycles=5).get_wave()
 
     waveform = harmonic01 + harmonic02
@@ -89,12 +102,13 @@ def __(np, plt):
     harmonics = np.zeros(len(_t))
     _N = len(waveform)
 
+    # Here we perform the DFT.
     for k, j in enumerate(range(_N)):
         potential_harmonic = 0
         for i, x in enumerate(waveform):
             n = i
             potential_harmonic += x * np.sin(np.pi * 2 * (k / _N) * n)
-        print(f"harmonic {j} is {potential_harmonic}")
+        # print(f"harmonic {j} is {potential_harmonic}")
         # Dividing by N means normalizing the result.
         harmonics[j] = potential_harmonic / _N
 
