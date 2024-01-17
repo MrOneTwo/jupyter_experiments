@@ -81,7 +81,7 @@ def __(mo):
 
 
 @app.cell
-def __(np, plt, samples_count_slider):
+def __(np, numpy, plt, samples_count_slider):
     from dataclasses import dataclass
     from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
@@ -99,24 +99,33 @@ def __(np, plt, samples_count_slider):
             return t, self.amplitude * np.sin(t)
 
 
-    _t, harmonic01 = Waveform(cycles=4, amplitude=1, resolution=int(samples_count_slider.value)).get_wave()
-    _, harmonic02 = Waveform(cycles=12, amplitude=2, resolution=int(samples_count_slider.value)).get_wave()
+    _t, harmonic01 = Waveform(
+        cycles=4, amplitude=1, resolution=int(samples_count_slider.value)
+    ).get_wave()
+    _, harmonic02 = Waveform(
+        cycles=12, amplitude=2, resolution=int(samples_count_slider.value)
+    ).get_wave()
     # _, waveform03 = Waveform(cycles=5).get_wave()
 
     waveform = harmonic01 + harmonic02
 
-    harmonics = np.zeros(len(_t))
-    _N = len(waveform)
 
-    # Here we perform the DFT.
-    for k, j in enumerate(range(_N)):
-        potential_harmonic = 0
-        for i, x in enumerate(waveform):
-            n = i
-            potential_harmonic += x * np.sin(np.pi * 2 * (k / _N) * n)
-        # print(f"harmonic {j} is {potential_harmonic}")
-        # Dividing by N means normalizing the result.
-        harmonics[j] = potential_harmonic / _N
+    def dft(t: numpy.ndarray, waveform: numpy.ndarray):
+        N = len(waveform)
+        harmonics = np.zeros(len(t))
+        for k, j in enumerate(range(N)):
+            potential_harmonic = 0
+            for i, x in enumerate(waveform):
+                n = i
+                potential_harmonic += x * np.sin(np.pi * 2 * (k / N) * n)
+            # print(f"harmonic {j} is {potential_harmonic}")
+            # Dividing by N means normalizing the result.
+            harmonics[j] = potential_harmonic / N
+
+        return harmonics
+
+
+    harmonics = dft(_t, waveform)
 
     data_to_plot = (harmonic01, harmonic02, waveform, harmonics)
     _fig, _axs = plt.subplots(len(data_to_plot), figsize=(14, 14))
@@ -140,16 +149,12 @@ def __(np, plt, samples_count_slider):
         data,
         data_to_plot,
         dataclass,
+        dft,
         harmonic01,
         harmonic02,
         harmonics,
         i,
-        j,
-        k,
-        n,
-        potential_harmonic,
         waveform,
-        x,
     )
 
 
