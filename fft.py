@@ -145,6 +145,10 @@ def __(np, npt, plt, samples_count_slider):
     # Here we have the information split over real and imaginary part, depending
     # on if the harmonics resemble cos or sin more.
     harmonics = dft(_t, waveform)
+    # Filter out the almost 0 values. It's especially important for computing the
+    # phase shift, with arctan2. That's because two very small number, divided by
+    # each other, will result in a legit value: 0.00000002/0.00000001 = 2.
+    harmonics[:] = list(map(lambda c: c if abs(c) > 0.0001 else 0.0, harmonics))
     # abs for complex computes magnituted
     harmonics_mag = list(map(abs, harmonics))
     harmonics_phase = list(map(lambda c: np.arctan2(c.imag, c.real), harmonics))
