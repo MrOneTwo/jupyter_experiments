@@ -94,15 +94,16 @@ def __(np, numpy, plt, samples_count_slider):
         amplitude: int = 1
         # This will impact how many frequencies FFT analyzes.
         resolution: int = 200
+        phase_shift: float = 0
 
         def get_wave(self):
             length = np.pi * 2 * self.frequency
             t = np.arange(0, length, length / self.resolution)
-            return t, self.amplitude * np.sin(t)
+            return t, self.amplitude * np.sin(t + self.phase_shift)
 
 
     _t, harmonic01 = Waveform(
-        frequency=4, amplitude=1, resolution=int(samples_count_slider.value)
+        frequency=4, amplitude=1, phase_shift=np.pi, resolution=int(samples_count_slider.value)
     ).get_wave()
     _, harmonic02 = Waveform(
         frequency=12, amplitude=2, resolution=int(samples_count_slider.value)
@@ -112,7 +113,7 @@ def __(np, numpy, plt, samples_count_slider):
     waveform = harmonic01 + harmonic02
 
 
-    def dft(t: numpy.ndarray, waveform: numpy.ndarray):
+    def dft_only_sin(t: numpy.ndarray, waveform: numpy.ndarray):
         N = len(waveform)
         harmonics = np.zeros(len(t))
         for k, j in enumerate(range(N)):
@@ -127,7 +128,22 @@ def __(np, numpy, plt, samples_count_slider):
         return harmonics
 
 
-    harmonics = dft(_t, waveform)
+    def dft_only_cos(t: numpy.ndarray, waveform: numpy.ndarray):
+        N = len(waveform)
+        harmonics = np.zeros(len(t))
+        for k, j in enumerate(range(N)):
+            potential_harmonic = 0
+            for i, x in enumerate(waveform):
+                n = i
+                potential_harmonic += x * np.cos(np.pi * 2 * (k / N) * n)
+            # print(f"harmonic {j} is {potential_harmonic}")
+            # Dividing by N means normalizing the result.
+            harmonics[j] = potential_harmonic / N
+
+        return harmonics
+
+
+    harmonics = dft_only_sin(_t, waveform)
 
     data_to_plot = (harmonic01, harmonic02, waveform, harmonics)
     _fig, _axs = plt.subplots(len(data_to_plot), figsize=(14, 14))
@@ -151,7 +167,8 @@ def __(np, numpy, plt, samples_count_slider):
         data,
         data_to_plot,
         dataclass,
-        dft,
+        dft_only_cos,
+        dft_only_sin,
         harmonic01,
         harmonic02,
         harmonics,
