@@ -17,12 +17,13 @@ def __():
     import struct
 
     import numpy as np
+    import numpy.typing as npt
     import matplotlib.pyplot as plt
 
     data_unpacked = np.asarray(
         [d[0] for d in struct.iter_unpack("<H", Path("samples.bin").read_bytes())]
     )
-    return Path, data_unpacked, mo, np, plt, struct
+    return Path, data_unpacked, mo, np, npt, plt, struct
 
 
 @app.cell
@@ -83,7 +84,7 @@ def __(mo):
 
 
 @app.cell
-def __(np, numpy, plt, samples_count_slider):
+def __(np, npt, plt, samples_count_slider):
     from dataclasses import dataclass
     from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
@@ -103,7 +104,7 @@ def __(np, numpy, plt, samples_count_slider):
 
 
     _t, harmonic01 = Waveform(
-        frequency=4, amplitude=1, phase_shift=np.pi, resolution=int(samples_count_slider.value)
+        frequency=4, amplitude=1, phase_shift=-1, resolution=int(samples_count_slider.value)
     ).get_wave()
     _, harmonic02 = Waveform(
         frequency=12, amplitude=2, resolution=int(samples_count_slider.value)
@@ -113,7 +114,7 @@ def __(np, numpy, plt, samples_count_slider):
     waveform = harmonic01 + harmonic02
 
 
-    def dft_only_sin(t: numpy.ndarray, waveform: numpy.ndarray):
+    def dft_only_sin(t: npt.NDArray[float], waveform: npt.NDArray[float]) -> npt.NDArray[float]:
         N = len(waveform)
         harmonics = np.zeros(len(t))
         for k, j in enumerate(range(N)):
@@ -128,33 +129,44 @@ def __(np, numpy, plt, samples_count_slider):
         return harmonics
 
 
-    def dft_only_cos(t: numpy.ndarray, waveform: numpy.ndarray):
+    def dft(t: npt.NDArray[float], waveform: npt.NDArray[float]) -> npt.NDArray[complex]:
         N = len(waveform)
-        harmonics = np.zeros(len(t))
+        harmonics = np.zeros(len(t), dtype=complex)
         for k, j in enumerate(range(N)):
             potential_harmonic = 0
             for i, x in enumerate(waveform):
                 n = i
-                potential_harmonic += x * np.cos(np.pi * 2 * (k / N) * n)
+                potential_harmonic += x * complex(np.cos(2*np.pi * (k/N) * n), -1 * np.sin(2*np.pi * (k/N) * n))
             # print(f"harmonic {j} is {potential_harmonic}")
-            # Dividing by N means normalizing the result.
-            harmonics[j] = potential_harmonic / N
+            harmonics[j] = potential_harmonic
 
         return harmonics
 
+    # Here we have the information split over real and imaginary part, depending
+    # on if the harmonics resemble cos or sin more.
+    harmonics = dft(_t, waveform)
+    # abs for complex computes magnituted
+    harmonics_mag = list(map(abs, harmonics))
+    harmonics_phase = list(map(lambda c: np.arctan2(c.imag, c.real), harmonics))
+    print(harmonics)
+    print(harmonics_mag)
+    print(harmonics_phase)
 
-    harmonics = dft_only_sin(_t, waveform)
-
-    data_to_plot = (harmonic01, harmonic02, waveform, harmonics)
+    data_to_plot = (harmonic01, harmonic02, waveform, harmonics_mag, harmonics_phase)
     _fig, _axs = plt.subplots(len(data_to_plot), figsize=(14, 14))
 
-    for i, data in enumerate(data_to_plot[:-1]):
+    for i, data in enumerate(data_to_plot[:-2]):
         _axs[i].set_ylim([data.min() - 0.4, data.max() + 0.4])
         _axs[i].plot(_t, data, linewidth=0.7, linestyle="solid", marker="o")
         # _axs[i].set(xlabel='sample', ylabel='val', title='Soundwave plot')
         _axs[i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
-    _axs[-1].bar(np.arange(len(harmonics)), harmonics)
+    _axs[-2].bar(np.arange(len(harmonics_mag)), harmonics_mag)
+    _axs[-2].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+    _axs[-2].xaxis.set_major_locator(MultipleLocator(10))
+    _axs[-2].xaxis.set_minor_locator(MultipleLocator(5))
+
+    _axs[-1].bar(np.arange(len(harmonics_mag)), harmonics_phase)
     _axs[-1].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
     _axs[-1].xaxis.set_major_locator(MultipleLocator(10))
     _axs[-1].xaxis.set_minor_locator(MultipleLocator(5))
@@ -167,11 +179,13 @@ def __(np, numpy, plt, samples_count_slider):
         data,
         data_to_plot,
         dataclass,
-        dft_only_cos,
+        dft,
         dft_only_sin,
         harmonic01,
         harmonic02,
         harmonics,
+        harmonics_mag,
+        harmonics_phase,
         i,
         waveform,
     )
@@ -182,7 +196,7 @@ def __(harmonics, mo):
     def filter_harmonics(harmonics):
         valid_harmonics = []
         for i, h in enumerate(harmonics):
-            if h > 0.001 or h < -0.001:
+            if abs(h) > 0.001 or abs(h) < -0.001:
                 valid_harmonics.append((i, h))
 
         return valid_harmonics
