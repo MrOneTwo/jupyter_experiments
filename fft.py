@@ -5,12 +5,6 @@ app = marimo.App()
 
 
 @app.cell
-def __(mo):
-    mo.md("# Fourier Transform")
-    return
-
-
-@app.cell
 def __():
     import marimo as mo
     from pathlib import Path
@@ -19,11 +13,42 @@ def __():
     import numpy as np
     import numpy.typing as npt
     import matplotlib.pyplot as plt
+    import wave
+
+    mo.md("# Fourier Transform")
+    return Path, mo, np, npt, plt, struct, wave
+
+
+@app.cell
+def __(Path, mo, np, struct, wave):
+    SAMPLES_FILE = "samples.bin"
 
     data_unpacked = np.asarray(
-        [d[0] for d in struct.iter_unpack("<H", Path("samples.bin").read_bytes())]
+        [d[0] for d in struct.iter_unpack("<H", Path(SAMPLES_FILE).read_bytes())]
     )
-    return Path, data_unpacked, mo, np, npt, plt, struct
+
+    _data_float = data_unpacked / 8192.0
+    soundwave = _data_float * np.iinfo(np.int16).max
+
+    SAMPLE_RATE = 32000
+    BYTES_PER_SAMPLE = 2
+
+    with wave.open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "w") as f:
+        f.setnchannels(1)
+        f.setsampwidth(BYTES_PER_SAMPLE)
+        f.setframerate(SAMPLE_RATE)
+        f.writeframes(data_unpacked.astype(np.int16))
+
+    with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
+        mo.audio(src=_p)
+    return (
+        BYTES_PER_SAMPLE,
+        SAMPLES_FILE,
+        SAMPLE_RATE,
+        data_unpacked,
+        f,
+        soundwave,
+    )
 
 
 @app.cell
@@ -33,16 +58,13 @@ def __(mo):
 
 
 @app.cell
-def __(data_unpacked, np, plt):
+def __(SAMPLE_RATE, data_unpacked, np, plt):
     data_float = list()
     normalize_data = lambda x: x/ 8192.0
     data_float = normalize_data(data_unpacked)
 
-    FREQUENCY = 32 * 1000
-    BYTES_PER_SAMPLE = 2
-
     _data_to_plot = data_float
-    dt = 1.0 /FREQUENCY
+    dt = 1.0 /SAMPLE_RATE
     _t = np.arange(0, len(_data_to_plot), 1)
 
     _fig, _axs = plt.subplots(len((_data_to_plot, [])))
@@ -54,7 +76,7 @@ def __(data_unpacked, np, plt):
         _axs[_i].grid(color='k', alpha=0.2, linestyle='-.', linewidth=0.5)
 
     _fig
-    return BYTES_PER_SAMPLE, FREQUENCY, data_float, dt, normalize_data
+    return data_float, dt, normalize_data
 
 
 @app.cell
