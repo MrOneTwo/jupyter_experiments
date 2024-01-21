@@ -41,8 +41,13 @@ def __(Path, mo, np, struct, wave):
         f.setframerate(SAMPLE_RATE)
         f.writeframes(data_unpacked.astype(np.int16))
 
-    with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
-        mo.audio(src=_p)
+    # with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
+    mo.vstack(
+        [
+            mo.md("Example sound file:"),
+            mo.audio(src="samples.wav"),
+        ]
+    )
     return (
         BYTES_PER_SAMPLE,
         SAMPLES_FILE,
@@ -62,20 +67,20 @@ def __(mo):
 @app.cell
 def __(SAMPLE_RATE, data_unpacked, np, plt):
     data_float = list()
-    normalize_data = lambda x: x/ 8192.0
+    normalize_data = lambda x: x / 8192.0
     data_float = normalize_data(data_unpacked)
 
     _data_to_plot = data_float
-    dt = 1.0 /SAMPLE_RATE
+    dt = 1.0 / SAMPLE_RATE
     _t = np.arange(0, len(_data_to_plot), 1)
 
     _fig, _axs = plt.subplots(len((_data_to_plot, [])))
 
-    for _i, _data in enumerate((_data_to_plot, )):
+    for _i, _data in enumerate((_data_to_plot,)):
         _axs[_i].set_ylim([_data.mean() - 0.05, _data.mean() + 0.05])
         _axs[_i].plot(_t, _data, linewidth=0.1)
-        _axs[_i].set(xlabel='sample', ylabel='val', title='Soundwave plot')
-        _axs[_i].grid(color='k', alpha=0.2, linestyle='-.', linewidth=0.5)
+        _axs[_i].set(xlabel="sample", ylabel="val", title="Soundwave plot")
+        _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
     _fig
     return data_float, dt, normalize_data
