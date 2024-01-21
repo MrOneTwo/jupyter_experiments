@@ -268,10 +268,7 @@ def __(harmonics, mo):
             line = f"{element.get('idx'): >5} | {element.get('value')}"
             lines.append(line)
 
-        result = ("\n").join(lines)
-        print(result)
-
-        return result
+        return lines
 
 
     mo.vstack(
@@ -281,7 +278,7 @@ def __(harmonics, mo):
          Checked {len(harmonics)} possible harmonics:
          """
             ),
-            mo.md(result_to_table(filter_harmonics(harmonics))),
+            result_to_table(filter_harmonics(harmonics)),
         ]
     )
     return filter_harmonics, result_to_table
