@@ -77,14 +77,27 @@ def __(mo):
 
 
 @app.cell
-def __(mo):
-    samples_count_slider = mo.ui.slider(start=1, stop=400, value=200, label="Samples count", debounce=True)
-    mo.md(f"{samples_count_slider}")
-    return samples_count_slider,
+def __(mo, np):
+    samples_count_slider = mo.ui.slider(
+        start=1, stop=400, value=200, label="Samples count", debounce=True
+    )
+    phase_shift_slider = mo.ui.slider(
+        start=0.0,
+        stop=np.pi,
+        step=0.1,
+        value=1.0,
+        label="Phase shift of the first waveform",
+        debounce=True,
+    )
+    mo.vstack([
+      mo.md(f"{samples_count_slider}"),
+      mo.md(f"{phase_shift_slider}")
+    ])
+    return phase_shift_slider, samples_count_slider
 
 
 @app.cell
-def __(np, npt, plt, samples_count_slider):
+def __(np, npt, phase_shift_slider, plt, samples_count_slider):
     from dataclasses import dataclass
     from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
@@ -100,11 +113,11 @@ def __(np, npt, plt, samples_count_slider):
         def get_wave(self):
             length = np.pi * 2 * self.frequency
             t = np.arange(0, length, length / self.resolution)
-            return t, self.amplitude * np.sin(t + self.phase_shift)
+            return t, self.amplitude * np.cos(t + self.phase_shift)
 
 
     _t, harmonic01 = Waveform(
-        frequency=4, amplitude=1, phase_shift=-1, resolution=int(samples_count_slider.value)
+        frequency=4, amplitude=1, phase_shift=phase_shift_slider.value, resolution=int(samples_count_slider.value)
     ).get_wave()
     _, harmonic02 = Waveform(
         frequency=12, amplitude=2, resolution=int(samples_count_slider.value)
