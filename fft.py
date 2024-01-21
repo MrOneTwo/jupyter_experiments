@@ -27,6 +27,8 @@ def __(Path, mo, np, struct, wave):
         [d[0] for d in struct.iter_unpack("<H", Path(SAMPLES_FILE).read_bytes())]
     )
 
+    # The microphone that recorded the samples has a certain bit depth for each sample.
+    # Convert to signed 16bit samples.
     _data_float = data_unpacked / 8192.0
     soundwave = _data_float * np.iinfo(np.int16).max
 
