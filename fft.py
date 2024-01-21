@@ -257,15 +257,34 @@ def __(harmonics, mo):
         valid_harmonics = []
         for i, h in enumerate(harmonics):
             if abs(h) > 0.001 or abs(h) < -0.001:
-                valid_harmonics.append((i, h))
+                valid_harmonics.append({"idx": i, "value": h})
 
         return valid_harmonics
 
 
-    mo.md(
-        f"Checked {len(harmonics)} possible harmonics: {filter_harmonics(harmonics)}"
+    def result_to_table(data: dict) -> str:
+        lines = []
+        for element in data:
+            line = f"{element.get('idx'): >5} | {element.get('value')}"
+            lines.append(line)
+
+        result = ("\n").join(lines)
+        print(result)
+
+        return result
+
+
+    mo.vstack(
+        [
+            mo.md(
+                f"""
+         Checked {len(harmonics)} possible harmonics:
+         """
+            ),
+            mo.md(result_to_table(filter_harmonics(harmonics))),
+        ]
     )
-    return filter_harmonics,
+    return filter_harmonics, result_to_table
 
 
 @app.cell
