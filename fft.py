@@ -89,10 +89,7 @@ def __(mo, np):
         label="Phase shift of the first waveform",
         debounce=True,
     )
-    mo.vstack([
-      mo.md(f"{samples_count_slider}"),
-      mo.md(f"{phase_shift_slider}")
-    ])
+    mo.vstack([mo.md(f"{samples_count_slider}"), mo.md(f"{phase_shift_slider}")])
     return phase_shift_slider, samples_count_slider
 
 
@@ -117,7 +114,10 @@ def __(np, npt, phase_shift_slider, plt, samples_count_slider):
 
 
     _t, harmonic01 = Waveform(
-        frequency=4, amplitude=1, phase_shift=phase_shift_slider.value, resolution=int(samples_count_slider.value)
+        frequency=4,
+        amplitude=1,
+        phase_shift=phase_shift_slider.value,
+        resolution=int(samples_count_slider.value),
     ).get_wave()
     _, harmonic02 = Waveform(
         frequency=12, amplitude=2, resolution=int(samples_count_slider.value)
@@ -127,7 +127,9 @@ def __(np, npt, phase_shift_slider, plt, samples_count_slider):
     waveform = harmonic01 + harmonic02
 
 
-    def dft_only_sin(t: npt.NDArray[float], waveform: npt.NDArray[float]) -> npt.NDArray[float]:
+    def dft_only_sin(
+        t: npt.NDArray[float], waveform: npt.NDArray[float]
+    ) -> npt.NDArray[float]:
         N = len(waveform)
         harmonics = np.zeros(len(t))
         for k, j in enumerate(range(N)):
@@ -142,18 +144,24 @@ def __(np, npt, phase_shift_slider, plt, samples_count_slider):
         return harmonics
 
 
-    def dft(t: npt.NDArray[float], waveform: npt.NDArray[float]) -> npt.NDArray[complex]:
+    def dft(
+        t: npt.NDArray[float], waveform: npt.NDArray[float]
+    ) -> npt.NDArray[complex]:
         N = len(waveform)
         harmonics = np.zeros(len(t), dtype=complex)
         for k, j in enumerate(range(N)):
             potential_harmonic = 0
             for i, x in enumerate(waveform):
                 n = i
-                potential_harmonic += x * complex(np.cos(2*np.pi * (k/N) * n), -1 * np.sin(2*np.pi * (k/N) * n))
+                potential_harmonic += x * complex(
+                    np.cos(2 * np.pi * (k / N) * n),
+                    -1 * np.sin(2 * np.pi * (k / N) * n),
+                )
             # print(f"harmonic {j} is {potential_harmonic}")
             harmonics[j] = potential_harmonic
 
         return harmonics
+
 
     # Here we have the information split over real and imaginary part, depending
     # on if the harmonics resemble cos or sin more.
@@ -165,11 +173,17 @@ def __(np, npt, phase_shift_slider, plt, samples_count_slider):
     # abs for complex computes magnituted
     harmonics_mag = list(map(abs, harmonics))
     harmonics_phase = list(map(lambda c: np.arctan2(c.imag, c.real), harmonics))
-    print(harmonics)
-    print(harmonics_mag)
-    print(harmonics_phase)
+    #print(harmonics)
+    #print(harmonics_mag)
+    #print(harmonics_phase)
 
-    data_to_plot = (harmonic01, harmonic02, waveform, harmonics_mag, harmonics_phase)
+    data_to_plot = (
+        harmonic01,
+        harmonic02,
+        waveform,
+        harmonics_mag,
+        harmonics_phase,
+    )
     _fig, _axs = plt.subplots(len(data_to_plot), figsize=(14, 14))
 
     for i, data in enumerate(data_to_plot[:-2]):
