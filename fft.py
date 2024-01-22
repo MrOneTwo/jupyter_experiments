@@ -35,7 +35,6 @@ def __():
         return colors
 
     colors = pull_colors()
-
     return Path, colors, mo, np, npt, plt, pull_colors, struct, wave
 
 
@@ -47,19 +46,22 @@ def __(Path, mo, np, struct, wave):
         [d[0] for d in struct.iter_unpack("<H", Path(SAMPLES_FILE).read_bytes())]
     )
 
-    # The microphone that recorded the samples has a certain bit depth for each sample.
-    # Convert to signed 16bit samples.
-    _data_float = data_unpacked / 8192.0
-    soundwave = _data_float * np.iinfo(np.int16).max
-
     SAMPLE_RATE = 32000
     BYTES_PER_SAMPLE = 2
 
-    with wave.open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "w") as f:
-        f.setnchannels(1)
-        f.setsampwidth(BYTES_PER_SAMPLE)
-        f.setframerate(SAMPLE_RATE)
-        f.writeframes(soundwave.astype(np.int16))
+    def data_to_wave(data):
+        # The microphone that recorded the samples has a certain bit depth for each sample.
+        # Convert to signed 16bit samples.
+        _data_float = data_unpacked / 8192.0
+        soundwave = _data_float * np.iinfo(np.int16).max
+
+        with wave.open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "w") as f:
+            f.setnchannels(1)
+            f.setsampwidth(BYTES_PER_SAMPLE)
+            f.setframerate(SAMPLE_RATE)
+            f.writeframes(soundwave.astype(np.int16))
+
+    data_to_wave(data_unpacked)
 
     # with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
     mo.vstack(
@@ -72,9 +74,8 @@ def __(Path, mo, np, struct, wave):
         BYTES_PER_SAMPLE,
         SAMPLES_FILE,
         SAMPLE_RATE,
+        data_to_wave,
         data_unpacked,
-        f,
-        soundwave,
     )
 
 
