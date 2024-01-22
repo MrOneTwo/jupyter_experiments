@@ -39,7 +39,7 @@ def __(Path, mo, np, struct, wave):
         f.setnchannels(1)
         f.setsampwidth(BYTES_PER_SAMPLE)
         f.setframerate(SAMPLE_RATE)
-        f.writeframes(data_unpacked.astype(np.int16))
+        f.writeframes(soundwave.astype(np.int16))
 
     # with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
     mo.vstack(
