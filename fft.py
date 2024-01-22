@@ -16,7 +16,27 @@ def __():
     import wave
 
     mo.md("# Fourier Transform")
-    return Path, mo, np, npt, plt, struct, wave
+
+    plt.style.use("seaborn-dark-palette")
+    colors = []
+
+    def pull_colors():
+        colors = list()
+        for style in sorted(plt.style.library):
+            the_rc = plt.style.library[style]
+            if "axes.prop_cycle" in the_rc:
+                cols = the_rc["axes.prop_cycle"].by_key()["color"]
+                colors = cols
+                #print("%25s: %s" % (style, ", ".join(color for color in cols)))
+            else:
+                #print("%25s this style does not modify colors" % style)
+                pass
+
+        return colors
+
+    colors = pull_colors()
+
+    return Path, colors, mo, np, npt, plt, pull_colors, struct, wave
 
 
 @app.cell
@@ -65,7 +85,7 @@ def __(mo):
 
 
 @app.cell
-def __(SAMPLE_RATE, data_unpacked, np, plt):
+def __(SAMPLE_RATE, colors, data_unpacked, np, plt):
     data_float = list()
     normalize_data = lambda x: x / 8192.0
     data_float = normalize_data(data_unpacked)
@@ -78,7 +98,7 @@ def __(SAMPLE_RATE, data_unpacked, np, plt):
 
     for _i, _data in enumerate((_data_to_plot,)):
         _axs[_i].set_ylim([_data.mean() - 0.05, _data.mean() + 0.05])
-        _axs[_i].plot(_t, _data, linewidth=0.1)
+        _axs[_i].plot(_t, _data, color=colors[8], linewidth=0.1)
         _axs[_i].set(xlabel="sample", ylabel="val", title="Soundwave plot")
         _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
