@@ -16,7 +16,11 @@ def __():
     import wave
 
     mo.md("# Fourier Transform")
+    return Path, mo, np, npt, plt, struct, wave
 
+
+@app.cell
+def __(plt):
     plt.style.use("seaborn-dark-palette")
     colors = []
 
@@ -35,76 +39,7 @@ def __():
         return colors
 
     colors = pull_colors()
-    return Path, colors, mo, np, npt, plt, pull_colors, struct, wave
-
-
-@app.cell
-def __(Path, mo, np, struct, wave):
-    SAMPLES_FILE = "samples.bin"
-
-    data_unpacked = np.asarray(
-        [d[0] for d in struct.iter_unpack("<H", Path(SAMPLES_FILE).read_bytes())]
-    )
-
-    SAMPLE_RATE = 32000
-    BYTES_PER_SAMPLE = 2
-
-    def data_to_wave(data):
-        # The microphone that recorded the samples has a certain bit depth for each sample.
-        # Convert to signed 16bit samples.
-        _data_float = data_unpacked / 8192.0
-        soundwave = _data_float * np.iinfo(np.int16).max
-
-        with wave.open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "w") as f:
-            f.setnchannels(1)
-            f.setsampwidth(BYTES_PER_SAMPLE)
-            f.setframerate(SAMPLE_RATE)
-            f.writeframes(soundwave.astype(np.int16))
-
-    data_to_wave(data_unpacked)
-
-    # with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
-    mo.vstack(
-        [
-            mo.md("Example sound file:"),
-            mo.audio(src="samples.wav"),
-        ]
-    )
-    return (
-        BYTES_PER_SAMPLE,
-        SAMPLES_FILE,
-        SAMPLE_RATE,
-        data_to_wave,
-        data_unpacked,
-    )
-
-
-@app.cell
-def __(mo):
-    mo.md("Loaded the 2 byte sample data.")
-    return
-
-
-@app.cell
-def __(SAMPLE_RATE, colors, data_unpacked, np, plt):
-    data_float = list()
-    normalize_data = lambda x: x / 8192.0
-    data_float = normalize_data(data_unpacked)
-
-    _data_to_plot = data_float
-    dt = 1.0 / SAMPLE_RATE
-    _t = np.arange(0, len(_data_to_plot), 1)
-
-    _fig, _axs = plt.subplots(len((_data_to_plot, [])))
-
-    for _i, _data in enumerate((_data_to_plot,)):
-        _axs[_i].set_ylim([_data.mean() - 0.05, _data.mean() + 0.05])
-        _axs[_i].plot(_t, _data, color=colors[8], linewidth=0.1)
-        _axs[_i].set(xlabel="sample", ylabel="val", title="Soundwave plot")
-        _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
-
-    _fig
-    return data_float, dt, normalize_data
+    return colors, pull_colors
 
 
 @app.cell
@@ -311,6 +246,81 @@ def __(harmonics, mo):
 def __(mo):
     mo.md("The spectrum graph is mirrored. That's because the samples of the originally sampled signal match with the sinusoid of those higher frequencies too. The frequencies in the middle is the Nyquist Rate.")
     return
+
+
+@app.cell
+def __(mo):
+    mo.md("## Analysis of recorded data")
+    return
+
+
+@app.cell
+def __(Path, mo, np, struct, wave):
+    SAMPLES_FILE = "samples.bin"
+
+    data_unpacked = np.asarray(
+        [d[0] for d in struct.iter_unpack("<H", Path(SAMPLES_FILE).read_bytes())]
+    )
+
+    SAMPLE_RATE = 32000
+    BYTES_PER_SAMPLE = 2
+
+    def data_to_wave(data):
+        # The microphone that recorded the samples has a certain bit depth for each sample.
+        # Convert to signed 16bit samples.
+        _data_float = data_unpacked / 8192.0
+        soundwave = _data_float * np.iinfo(np.int16).max
+
+        with wave.open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "w") as f:
+            f.setnchannels(1)
+            f.setsampwidth(BYTES_PER_SAMPLE)
+            f.setframerate(SAMPLE_RATE)
+            f.writeframes(soundwave.astype(np.int16))
+
+    data_to_wave(data_unpacked)
+
+    # with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
+    mo.vstack(
+        [
+            mo.md("Example sound file:"),
+            mo.audio(src="samples.wav"),
+        ]
+    )
+    return (
+        BYTES_PER_SAMPLE,
+        SAMPLES_FILE,
+        SAMPLE_RATE,
+        data_to_wave,
+        data_unpacked,
+    )
+
+
+@app.cell
+def __(mo):
+    mo.md("Loaded the 2 byte sample data.")
+    return
+
+
+@app.cell
+def __(SAMPLE_RATE, colors, data_unpacked, np, plt):
+    data_float = list()
+    normalize_data = lambda x: x / 8192.0
+    data_float = normalize_data(data_unpacked)
+
+    _data_to_plot = data_float
+    dt = 1.0 / SAMPLE_RATE
+    _t = np.arange(0, len(_data_to_plot), 1)
+
+    _fig, _axs = plt.subplots(len((_data_to_plot, [])))
+
+    for _i, _data in enumerate((_data_to_plot,)):
+        _axs[_i].set_ylim([_data.mean() - 0.05, _data.mean() + 0.05])
+        _axs[_i].plot(_t, _data, color=colors[8], linewidth=0.1)
+        _axs[_i].set(xlabel="sample", ylabel="val", title="Soundwave plot")
+        _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+
+    _fig
+    return data_float, dt, normalize_data
 
 
 if __name__ == "__main__":
