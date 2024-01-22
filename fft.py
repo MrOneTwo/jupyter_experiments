@@ -109,13 +109,15 @@ def __(SAMPLE_RATE, colors, data_unpacked, np, plt):
 
 @app.cell
 def __(mo):
-    mo.md(r"""Here is the simplified DFT
+    mo.md(r"""Here is the simplified DFT. The result will be a set of complex numbers. Think of those complex numbers like of a vector $A -j B$. $A$ is proportional to how much of the $\cos$ of that specific frequency is present in the final signal, with $B$ being proportional to how much $\sin$ is there.
 
     \[
-    X_k = \sum_{n=0}^{N-1} x_n \sin(2\pi\frac{k}{N}n)
+    X_k = \sum_{n=0}^{N-1} x_n [\cos(2\pi\frac{n}{N}k) -j \sin(2\pi\frac{n}{N}k)]
     \]
 
     N - is the total samples count.
+
+    Total contribution of a specific frequency is taken from $\sqrt{A^2 + B^2}$. The phase shift can be computed from $atan2(\frac{B}{A})$.
     """)
     return
 
