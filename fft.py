@@ -77,7 +77,7 @@ def __(mo, np):
         label="Phase shift of the first waveform",
         debounce=True,
     )
-    mo.vstack([mo.md(f"{samples_count_slider}"), mo.md(f"{phase_shift_slider}")])
+    mo.vstack([mo.md(f"{samples_count_slider}"), mo.md(f"{phase_shift_slider}"), mo.md("Notice we're using fully periodic signals here. That's what Fourier Transform expects. If one of the harmonics isn't periodic, the FT will behave strangely. That's why in practice we use windowing.")])
     return phase_shift_slider, samples_count_slider
 
 
