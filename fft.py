@@ -12,12 +12,30 @@ def __():
 
     import numpy as np
     import numpy.typing as npt
+    import math
     import matplotlib.pyplot as plt
     import wave
     import base64
 
+    import fft_functions as fft
+
+    import importlib
+    importlib.reload(fft)
+
     mo.md("# Fourier Transform")
-    return Path, base64, mo, np, npt, plt, struct, wave
+    return (
+        Path,
+        base64,
+        fft,
+        importlib,
+        math,
+        mo,
+        np,
+        npt,
+        plt,
+        struct,
+        wave,
+    )
 
 
 @app.cell
@@ -82,32 +100,19 @@ def __(mo, np):
 
 
 @app.cell
-def __(np, npt, phase_shift_slider, plt, samples_count_slider):
-    from dataclasses import dataclass
+def __(fft, importlib, np, phase_shift_slider, plt, samples_count_slider):
     from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
-
-    @dataclass
-    class Waveform:
-        frequency: int
-        amplitude: int = 1
-        # This will impact how many frequencies FFT analyzes.
-        resolution: int = 200
-        phase_shift: float = 0
-
-        def get_wave(self):
-            length = np.pi * 2 * self.frequency
-            t = np.arange(0, length, length / self.resolution)
-            return t, self.amplitude * np.cos(t + self.phase_shift)
+    importlib.reload(fft)
 
 
-    _t, harmonic01 = Waveform(
+    time_base, harmonic01 = fft.Waveform(
         frequency=4,
         amplitude=1,
         phase_shift=phase_shift_slider.value,
         resolution=int(samples_count_slider.value),
     ).get_wave()
-    _, harmonic02 = Waveform(
+    _, harmonic02 = fft.Waveform(
         frequency=12, amplitude=2, resolution=int(samples_count_slider.value)
     ).get_wave()
     # _, waveform03 = Waveform(cycles=5).get_wave()
@@ -115,45 +120,9 @@ def __(np, npt, phase_shift_slider, plt, samples_count_slider):
     waveform = harmonic01 + harmonic02
 
 
-    def dft_only_sin(
-        t: npt.NDArray[float], waveform: npt.NDArray[float]
-    ) -> npt.NDArray[float]:
-        N = len(waveform)
-        harmonics = np.zeros(len(t))
-        for k, j in enumerate(range(N)):
-            potential_harmonic = 0
-            for i, x in enumerate(waveform):
-                n = i
-                potential_harmonic += x * np.sin(np.pi * 2 * (k / N) * n)
-            # print(f"harmonic {j} is {potential_harmonic}")
-            # Dividing by N means normalizing the result.
-            harmonics[j] = potential_harmonic / N
-
-        return harmonics
-
-
-    def dft(
-        t: npt.NDArray[float], waveform: npt.NDArray[float]
-    ) -> npt.NDArray[complex]:
-        N = len(waveform)
-        harmonics = np.zeros(len(t), dtype=complex)
-        for k, j in enumerate(range(N)):
-            potential_harmonic = 0
-            for i, x in enumerate(waveform):
-                n = i
-                potential_harmonic += x * complex(
-                    np.cos(2 * np.pi * (k / N) * n),
-                    -1 * np.sin(2 * np.pi * (k / N) * n),
-                )
-            # print(f"harmonic {j} is {potential_harmonic}")
-            harmonics[j] = potential_harmonic
-
-        return harmonics
-
-
     # Here we have the information split over real and imaginary part, depending
     # on if the harmonics resemble cos or sin more.
-    harmonics = dft(_t, waveform)
+    harmonics = fft.dft(time_base, waveform)
     # Filter out the almost 0 values. It's especially important for computing the
     # phase shift, with arctan2. That's because two very small number, divided by
     # each other, will result in a legit value: 0.00000002/0.00000001 = 2.
@@ -161,9 +130,7 @@ def __(np, npt, phase_shift_slider, plt, samples_count_slider):
     # abs for complex computes magnituted
     harmonics_mag = list(map(abs, harmonics))
     harmonics_phase = list(map(lambda c: np.arctan2(c.imag, c.real), harmonics))
-    #print(harmonics)
-    #print(harmonics_mag)
-    #print(harmonics_phase)
+
 
     data_to_plot = (
         harmonic01,
@@ -174,9 +141,10 @@ def __(np, npt, phase_shift_slider, plt, samples_count_slider):
     )
     _fig, _axs = plt.subplots(len(data_to_plot), figsize=(14, 14))
 
+
     for i, data in enumerate(data_to_plot[:-2]):
         _axs[i].set_ylim([data.min() - 0.4, data.max() + 0.4])
-        _axs[i].plot(_t, data, linewidth=0.7, linestyle="solid", marker="o")
+        _axs[i].plot(time_base, data, linewidth=0.7, linestyle="solid", marker="o")
         # _axs[i].set(xlabel='sample', ylabel='val', title='Soundwave plot')
         _axs[i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
@@ -190,23 +158,88 @@ def __(np, npt, phase_shift_slider, plt, samples_count_slider):
     _axs[-1].xaxis.set_major_locator(MultipleLocator(10))
     _axs[-1].xaxis.set_minor_locator(MultipleLocator(5))
 
+
     _fig
     return (
         AutoMinorLocator,
         MultipleLocator,
-        Waveform,
         data,
         data_to_plot,
-        dataclass,
-        dft,
-        dft_only_sin,
         harmonic01,
         harmonic02,
         harmonics,
         harmonics_mag,
         harmonics_phase,
         i,
+        time_base,
         waveform,
+    )
+
+
+@app.cell
+def __(mo):
+
+    mo.md(r"""
+    If the transform's input data isn't periodic you might see spectral leakage and aliasing effects.
+
+    In order to force input data to be periodic, windowing is used.
+    """)
+    return
+
+
+@app.cell
+def __(MultipleLocator, fft, np, plt, time_base, waveform):
+    # Window out the input signal, to ensure a periodic input data.
+    window = fft.generate_window(time_base, 0.5, 0.3)
+    # Create an array of bools.
+    window_mask = window != 0
+
+    harmonics_windowed = fft.dft(
+        np.arange(len(waveform[window_mask])), (waveform * window)[window_mask]
+    )
+    windowed_harmonics_mag = list(map(abs, harmonics_windowed))
+    windowed_harmonics_phase = list(map(lambda c: np.arctan2(c.imag, c.real), harmonics_windowed))
+
+    _fig, _axs = plt.subplots(5, figsize=(14, 14))
+
+    _axs[0].set_ylim([waveform.min() - 0.4, waveform.max() + 0.4])
+    _axs[0].plot(time_base, waveform, linewidth=0.7, linestyle="solid", marker="o")
+    # _axs[0].set(xlabel='sample', ylabel='val', title='Soundwave plot')
+    _axs[0].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+
+    _axs[1].set_ylim([window.min() - 0.4, window.max() + 0.4])
+    _axs[1].plot(time_base, window, linewidth=0.7, linestyle="solid", marker="o")
+    # _axs[1].set(xlabel='sample', ylabel='val', title='Soundwave plot')
+    _axs[1].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+
+    _axs[2].plot(
+        np.arange(len(waveform)), (waveform * window)
+    )
+    _axs[2].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+    _axs[2].xaxis.set_major_locator(MultipleLocator(10))
+    _axs[2].xaxis.set_minor_locator(MultipleLocator(5))
+
+    _axs[3].bar(
+        np.arange(len(windowed_harmonics_mag)), windowed_harmonics_mag
+    )
+    _axs[3].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+    _axs[3].xaxis.set_major_locator(MultipleLocator(10))
+    _axs[3].xaxis.set_minor_locator(MultipleLocator(5))
+
+    _axs[4].bar(
+        np.arange(len(windowed_harmonics_phase)), windowed_harmonics_phase
+    )
+    _axs[4].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+    _axs[4].xaxis.set_major_locator(MultipleLocator(10))
+    _axs[4].xaxis.set_minor_locator(MultipleLocator(5))
+
+    _fig
+    return (
+        harmonics_windowed,
+        window,
+        window_mask,
+        windowed_harmonics_mag,
+        windowed_harmonics_phase,
     )
 
 
