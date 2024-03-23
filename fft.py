@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.1.77"
+__generated_with = "0.2.5"
 app = marimo.App()
 
 
@@ -14,14 +14,15 @@ def __():
     import numpy.typing as npt
     import matplotlib.pyplot as plt
     import wave
+    import base64
 
     mo.md("# Fourier Transform")
-    return Path, mo, np, npt, plt, struct, wave
+    return Path, base64, mo, np, npt, plt, struct, wave
 
 
 @app.cell
 def __(plt):
-    plt.style.use("seaborn-dark-palette")
+    plt.style.use("ggplot")
     colors = []
 
     def pull_colors():
@@ -255,7 +256,7 @@ def __(mo):
 
 
 @app.cell
-def __(Path, mo, np, struct, wave):
+def __(Path, base64, mo, np, struct, wave):
     SAMPLES_FILE = "samples.bin"
 
     data_unpacked = np.asarray(
@@ -268,7 +269,7 @@ def __(Path, mo, np, struct, wave):
     def data_to_wave(data):
         # The microphone that recorded the samples has a certain bit depth for each sample.
         # Convert to signed 16bit samples.
-        _data_float = data_unpacked / 8192.0
+        _data_float = data / 8192.0
         soundwave = _data_float * np.iinfo(np.int16).max
 
         with wave.open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "w") as f:
@@ -279,11 +280,23 @@ def __(Path, mo, np, struct, wave):
 
     data_to_wave(data_unpacked)
 
+    # TODOD(michalc): delete this, when https://github.com/marimo-team/marimo/issues/632 gets fixed
+    _wav_data = Path(SAMPLES_FILE).with_suffix(".wav").read_bytes()
+    _wav_base64 = base64.b64encode(_wav_data).decode("utf-8")
+
     # with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
     mo.vstack(
         [
             mo.md("Example sound file:"),
-            mo.audio(src="samples.wav"),
+            #mo.audio(src="samples.wav"),
+            # TODOD(michalc): delete this, when https://github.com/marimo-team/marimo/issues/632 gets fixed
+            mo.Html(
+                f"""
+                <audio controls>
+                    <source src="data:audio/wav;base64,{_wav_base64}" type="audio/wav">
+                </audio>
+                """
+            )
         ]
     )
     return (
