@@ -43,6 +43,7 @@ def dft(
     t: npt.NDArray[float], waveform: npt.NDArray[float]
 ) -> npt.NDArray[complex]:
     N = len(waveform)
+    print(f"running DFT on {N} samples")
     harmonics = np.zeros(len(t), dtype=complex)
     for k, j in enumerate(range(N)):
         potential_harmonic = 0

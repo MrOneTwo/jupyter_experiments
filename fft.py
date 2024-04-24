@@ -14,6 +14,7 @@ def __():
     import numpy.typing as npt
     import math
     import matplotlib.pyplot as plt
+    import matplotlib
     import wave
     import base64
 
@@ -29,6 +30,7 @@ def __():
         fft,
         importlib,
         math,
+        matplotlib,
         mo,
         np,
         npt,
@@ -244,10 +246,10 @@ def __(MultipleLocator, fft, np, plt, time_base, waveform):
 
 @app.cell
 def __(harmonics, mo):
-    def filter_harmonics(harmonics):
+    def filter_harmonics(harmonics, epsilon: float=0.001):
         valid_harmonics = []
         for i, h in enumerate(harmonics):
-            if abs(h) > 0.001 or abs(h) < -0.001:
+            if abs(h) > epsilon or abs(h) < -1 * epsilon:
                 valid_harmonics.append({"idx": i, "value": h})
 
         return valid_harmonics
@@ -341,7 +343,15 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, mo):
 
 
 @app.cell
-def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
+def __(
+    MultipleLocator,
+    SAMPLE_RATE,
+    data_unpacked,
+    fft,
+    filter_harmonics,
+    np,
+    plt,
+):
     normalize_factor = np.iinfo(np.uint16).max
     normalize = lambda x: x / normalize_factor
     data_float = normalize(data_unpacked)
@@ -351,44 +361,90 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
     _t = np.arange(0, len(_data_to_plot), 1)
 
     # Window out the input signal, to ensure a periodic input data.
-    _window = fft.generate_window(_t, 0.3, 0.0)
+    _window = fft.generate_window(_t, 0.004, 0.1)
     # Create an array of bools.
     _window_mask = _window != 0
 
-    #_harmonics_windowed = fft.dft(
-        #np.arange(len(_t)), (data_unpacked * _window)[_window_mask]
-    #)
+    _harmonics_windowed = fft.dft(
+        np.arange(
+            len((data_float * _window)[_window_mask])
+        ),
+        (data_float * _window)[_window_mask]
+    )
+    print(_harmonics_windowed)
+    _windowed_harmonics_mag = list(map(abs, _harmonics_windowed))
+
+    print(filter_harmonics(_windowed_harmonics_mag, 0.8))
+    print(np.histogram(_windowed_harmonics_mag, bins=10))
 
     _to_plot = [
         {"data": _data_to_plot,
          "y_lim": (-1.1, 1.1),
          "title": "waveform",
+         "draw_func": "plot"
         },
         {"data": _window,
          "y_lim": (-0.1, 1.1),
-         "title": "window"},
+         "title": "window",
+         "draw_func": "plot"
+        },
         {"data": _window * _data_to_plot,
          "y_lim": (-0.02, 0.02),
-         "title": "waveform windowed"},
+         "title": "waveform windowed",
+         "draw_func": "plot",
+        },
+        {"data": _windowed_harmonics_mag[:len(_windowed_harmonics_mag)//2],
+         "title": "histogram",
+         "draw_func": "hist",
+        },
+        {"data": _windowed_harmonics_mag[:len(_windowed_harmonics_mag)//2],
+         "title": "DFT",
+         "draw_func": "bar",
+        }
     ]
 
     _fig, _axs = plt.subplots(
         len(_to_plot),
-        figsize=(8,9)
+        figsize=(8,10)
     )
+
+    print(np.histogram(_windowed_harmonics_mag, bins=10)[0])
+    print(np.histogram(_windowed_harmonics_mag, bins=10)[1])
 
     plt.subplots_adjust(hspace=0.8)
 
     for _i, _data in enumerate(_to_plot):
-        _axs[_i].set_ylim(_data["y_lim"])
-        _axs[_i].yaxis.set_major_locator(MultipleLocator(0.5))
-        _axs[_i].yaxis.set_minor_locator(MultipleLocator(.25))
-        _axs[_i].plot(_t, _data["data"], linewidth=0.5)
+        # vertical axis
+        try:
+            _axs[_i].set_ylim(_data["y_lim"])
+        except KeyError:
+            pass
+
+        # horizontal axis
+        x = np.arange(len(_data["data"]))
+        try:
+            x = _data["x"]
+        except KeyError:
+            pass
+
+        # type of a plot
+        try:
+            if _data["draw_func"] == "plot":
+                _axs[_i].plot(x, _data["data"], linewidth=0.5)
+                _axs[_i].yaxis.set_major_locator(MultipleLocator(0.5))
+                _axs[_i].yaxis.set_minor_locator(MultipleLocator(.25))
+            elif _data["draw_func"] == "bar":
+                _axs[_i].bar(x, _data["data"], linewidth=0.5)
+            elif _data["draw_func"] == "hist":
+                _axs[_i].hist(_data["data"], bins=10)
+        except KeyError:
+            pass
+
         _axs[_i].set(xlabel="sample", ylabel="val", title=_data["title"])
         _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
     _fig
-    return data_float, dt, normalize, normalize_factor
+    return data_float, dt, normalize, normalize_factor, x
 
 
 if __name__ == "__main__":
