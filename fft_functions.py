@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 import math
+import wave
 
 
 @dataclass
@@ -99,3 +100,26 @@ def params_from_file_name(filename: str):
         bytes_per_sample = 4
 
     return (sample_rate, bytes_per_sample)
+
+def raw_data_to_wave(data: np.ndarray, output_name: str, sample_rate: int, bytes_per_sample):
+    # The microphone that recorded the samples has a certain bit depth for each sample.
+    # Convert to signed 16bit samples.
+    # Signedss of PCM data: uint8, int16, int24, int32
+    if bytes_per_sample == 1:
+        normalize_factor = np.iinfo(np.uint8).max
+    elif bytes_per_sample == 2:
+        normalize_factor = np.iinfo(np.int16).max
+    # elif bytes_per_sample == 3:
+    #     normalize_factor = np.iinfo(np.int16).max
+    elif bytes_per_sample == 4: # signed
+        normalize_factor = np.iinfo(np.int32).max
+
+    normalize = lambda x: x / normalize_factor
+    _data_float = normalize(data)
+    soundwave = data
+
+    with wave.open(output_name, "w") as f:
+        f.setnchannels(1)
+        f.setsampwidth(bytes_per_sample)
+        f.setframerate(sample_rate)
+        f.writeframes(soundwave.astype(np.uint16))

@@ -288,7 +288,7 @@ def __(mo):
 
 
 @app.cell
-def __(Path, base64, fft, mo, np, struct, wave):
+def __(Path, base64, fft, mo, np, struct):
     SAMPLES_FILE = "samples_32k_16bit.bin"
 
     SAMPLE_RATE, BYTES_PER_SAMPLE = fft.params_from_file_name(SAMPLES_FILE)
@@ -297,21 +297,11 @@ def __(Path, base64, fft, mo, np, struct, wave):
         [d[0] for d in struct.iter_unpack("<h", Path(SAMPLES_FILE).read_bytes())]
     )
 
-    def data_to_wave(data: np.ndarray):
-        # The microphone that recorded the samples has a certain bit depth for each sample.
-        # Convert to signed 16bit samples.
-        normalize_factor = np.iinfo(np.uint16).max
-        normalize = lambda x: x / normalize_factor
-        _data_float = normalize(data)
-        soundwave = data
-
-        with wave.open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "w") as f:
-            f.setnchannels(1)
-            f.setsampwidth(BYTES_PER_SAMPLE)
-            f.setframerate(SAMPLE_RATE)
-            f.writeframes(soundwave.astype(np.uint16))
-
-    data_to_wave(data_unpacked)
+    fft.raw_data_to_wave(data_unpacked,
+                         str(Path(SAMPLES_FILE).with_suffix(".wav")),
+                         SAMPLE_RATE,
+                         BYTES_PER_SAMPLE
+                        )
 
     # TODOD(michalc): delete this, when https://github.com/marimo-team/marimo/issues/632 gets fixed
     _wav_data = Path(SAMPLES_FILE).with_suffix(".wav").read_bytes()
@@ -332,13 +322,7 @@ def __(Path, base64, fft, mo, np, struct, wave):
             )
         ]
     )
-    return (
-        BYTES_PER_SAMPLE,
-        SAMPLES_FILE,
-        SAMPLE_RATE,
-        data_to_wave,
-        data_unpacked,
-    )
+    return BYTES_PER_SAMPLE, SAMPLES_FILE, SAMPLE_RATE, data_unpacked
 
 
 @app.cell
