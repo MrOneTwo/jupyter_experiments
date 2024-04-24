@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.2.5"
+__generated_with = "0.4.3"
 app = marimo.App()
 
 
@@ -178,7 +178,6 @@ def __(fft, importlib, np, phase_shift_slider, plt, samples_count_slider):
 
 @app.cell
 def __(mo):
-
     mo.md(r"""
     If the transform's input data isn't periodic you might see spectral leakage and aliasing effects.
 
@@ -289,15 +288,14 @@ def __(mo):
 
 
 @app.cell
-def __(Path, base64, mo, np, struct, wave):
-    SAMPLES_FILE = "samples.bin"
+def __(Path, base64, fft, mo, np, struct, wave):
+    SAMPLES_FILE = "samples_32k_16bit.bin"
+
+    SAMPLE_RATE, BYTES_PER_SAMPLE = fft.params_from_file_name(SAMPLES_FILE)
 
     data_unpacked = np.asarray(
         [d[0] for d in struct.iter_unpack("<H", Path(SAMPLES_FILE).read_bytes())]
     )
-
-    SAMPLE_RATE = 32000
-    BYTES_PER_SAMPLE = 2
 
     def data_to_wave(data):
         # The microphone that recorded the samples has a certain bit depth for each sample.
@@ -342,8 +340,8 @@ def __(Path, base64, mo, np, struct, wave):
 
 
 @app.cell
-def __(mo):
-    mo.md("Loaded the 2 byte sample data.")
+def __(BYTES_PER_SAMPLE, SAMPLE_RATE, mo):
+    mo.md(f"Loaded the {SAMPLE_RATE}Hz, {BYTES_PER_SAMPLE} byte sample data.")
     return
 
 

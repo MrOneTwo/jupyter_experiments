@@ -80,3 +80,22 @@ def generate_window(
     return window_with_padding
 
 
+def params_from_file_name(filename: str):
+    sample_rate = 32000
+    bytes_per_sample = 2
+
+    if "16k" in filename:
+        sample_rate = 16000
+    elif "32k" in filename:
+        sample_rate = 32000
+    elif "44k" in filename:
+        sample_rate = 44100
+
+    if "8bit" in filename:
+        bytes_per_sample = 1
+    elif "16bit" in filename:
+        bytes_per_sample = 2
+    elif "32bit" in filename:
+        bytes_per_sample = 4
+
+    return (sample_rate, bytes_per_sample)
