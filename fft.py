@@ -288,22 +288,31 @@ def __(mo):
 
 
 @app.cell
-def __(Path, base64, fft, mo, np, struct):
-    SAMPLES_FILE = "samples_32k_16bit.bin"
+def __(Path, base64, fft, mo, np, struct, wave):
+    SAMPLES_FILE = "guitar_string_D.wav"
 
     SAMPLE_RATE, BYTES_PER_SAMPLE = fft.params_from_file_name(SAMPLES_FILE)
 
-    data_unpacked = np.asarray(
-        [d[0] for d in struct.iter_unpack("<h", Path(SAMPLES_FILE).read_bytes())]
-    )
+    if Path(SAMPLES_FILE).suffix == ".wav":
+        with wave.open(SAMPLES_FILE, 'r') as wf:
+            _wav_data = wf.readframes(wf.getnframes())
+        _data_unpacked = np.frombuffer(_wav_data, dtype=np.int16)
+    elif Path(SAMPLES_FILE).suffix == ".bin":
+        # Lets make a wave file out of raw samples.
+        _data_unpacked = np.asarray(
+            [d[0] for d in struct.iter_unpack("<h", Path(SAMPLES_FILE).read_bytes())]
+        )
+        fft.raw_data_to_wave(_data_unpacked,
+                             str(Path(SAMPLES_FILE).with_suffix(".wav")),
+                             SAMPLE_RATE,
+                             BYTES_PER_SAMPLE
+                            )
+    else:
+        assert False, "yikes"
 
-    fft.raw_data_to_wave(data_unpacked,
-                         str(Path(SAMPLES_FILE).with_suffix(".wav")),
-                         SAMPLE_RATE,
-                         BYTES_PER_SAMPLE
-                        )
+    data_unpacked = _data_unpacked
 
-    # TODOD(michalc): delete this, when https://github.com/marimo-team/marimo/issues/632 gets fixed
+    # TODO(michalc): delete this, when https://github.com/marimo-team/marimo/issues/632 gets fixed
     _wav_data = Path(SAMPLES_FILE).with_suffix(".wav").read_bytes()
     _wav_base64 = base64.b64encode(_wav_data).decode("utf-8")
 
@@ -322,7 +331,7 @@ def __(Path, base64, fft, mo, np, struct):
             )
         ]
     )
-    return BYTES_PER_SAMPLE, SAMPLES_FILE, SAMPLE_RATE, data_unpacked
+    return BYTES_PER_SAMPLE, SAMPLES_FILE, SAMPLE_RATE, data_unpacked, wf
 
 
 @app.cell
@@ -340,6 +349,10 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, np, plt):
     _data_to_plot = data_float
     dt = 1.0 / SAMPLE_RATE
     _t = np.arange(0, len(_data_to_plot), 1)
+
+    #_harmonics_windowed = fft.dft(
+        #np.arange(len(_t)), (data_unpacked * window)[window_mask]
+    #)
 
     _fig, _axs = plt.subplots(len((_data_to_plot, [])), figsize=(8,4))
 
