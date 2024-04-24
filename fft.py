@@ -293,17 +293,19 @@ def __(mo):
 def __(Path, base64, fft, mo, np, struct, wave):
     SAMPLES_FILE = "guitar_string_D.wav"
 
-    SAMPLE_RATE, BYTES_PER_SAMPLE = fft.params_from_file_name(SAMPLES_FILE)
 
     if Path(SAMPLES_FILE).suffix == ".wav":
         with wave.open(SAMPLES_FILE, 'r') as wf:
             _wav_data = wf.readframes(wf.getnframes())
         _data_unpacked = np.frombuffer(_wav_data, dtype=np.int16)
+        BYTES_PER_SAMPLE = wf.getsampwidth()
+        SAMPLE_RATE = wf.getframerate()
     elif Path(SAMPLES_FILE).suffix == ".bin":
         # Lets make a wave file out of raw samples.
         _data_unpacked = np.asarray(
             [d[0] for d in struct.iter_unpack("<h", Path(SAMPLES_FILE).read_bytes())]
         )
+        SAMPLE_RATE, BYTES_PER_SAMPLE = fft.params_from_file_name(SAMPLES_FILE)
         fft.raw_data_to_wave(_data_unpacked,
                              str(Path(SAMPLES_FILE).with_suffix(".wav")),
                              SAMPLE_RATE,
@@ -361,7 +363,7 @@ def __(
     _t = np.arange(0, len(_data_to_plot), 1)
 
     # Window out the input signal, to ensure a periodic input data.
-    _window = fft.generate_window(_t, 0.01, 0.2, to_nearest_power_of_two=True)
+    _window = fft.generate_window(_t, 0.005, 0.2, to_nearest_power_of_two=True)
     # Create an array of bools.
     _window_mask = _window != 0
 
@@ -406,7 +408,7 @@ def __(
 
     _fig, _axs = plt.subplots(
         len(_to_plot),
-        figsize=(8,10)
+        figsize=(8,12)
     )
 
     plt.subplots_adjust(hspace=0.8)
@@ -417,7 +419,7 @@ def __(
             _axs[_i].set_ylim(_data["y_lim"])
         except KeyError:
             pass
-            
+
         # horizontal axis
         x = np.arange(len(_data["data"]))
         try:
@@ -437,7 +439,7 @@ def __(
                 _axs[_i].hist(_data["data"], bins=10)
         except KeyError:
             pass
-            
+
         _axs[_i].set(xlabel="sample", ylabel="val", title=_data["title"])
         _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
