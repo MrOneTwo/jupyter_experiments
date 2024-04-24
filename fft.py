@@ -361,7 +361,7 @@ def __(
     _t = np.arange(0, len(_data_to_plot), 1)
 
     # Window out the input signal, to ensure a periodic input data.
-    _window = fft.generate_window(_t, 0.008, 0.1)
+    _window = fft.generate_window(_t, 0.01, 0.2, to_nearest_power_of_two=True)
     # Create an array of bools.
     _window_mask = _window != 0
 
@@ -374,7 +374,7 @@ def __(
     print(_harmonics_windowed)
     _windowed_harmonics_mag = list(map(abs, _harmonics_windowed))
 
-    print(filter_harmonics(_windowed_harmonics_mag, 0.8))
+    print(filter_harmonics(_windowed_harmonics_mag, 1.2))
     print(np.histogram(_windowed_harmonics_mag, bins=10))
 
     _to_plot = [
@@ -409,9 +409,6 @@ def __(
         figsize=(8,10)
     )
 
-    print(np.histogram(_windowed_harmonics_mag, bins=10)[0])
-    print(np.histogram(_windowed_harmonics_mag, bins=10)[1])
-
     plt.subplots_adjust(hspace=0.8)
 
     for _i, _data in enumerate(_to_plot):
@@ -420,7 +417,7 @@ def __(
             _axs[_i].set_ylim(_data["y_lim"])
         except KeyError:
             pass
-
+            
         # horizontal axis
         x = np.arange(len(_data["data"]))
         try:
@@ -440,7 +437,7 @@ def __(
                 _axs[_i].hist(_data["data"], bins=10)
         except KeyError:
             pass
-
+            
         _axs[_i].set(xlabel="sample", ylabel="val", title=_data["title"])
         _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
