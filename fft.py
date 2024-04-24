@@ -130,49 +130,106 @@ def __(fft, importlib, np, phase_shift_slider, plt, samples_count_slider):
     # each other, will result in a legit value: 0.00000002/0.00000001 = 2.
     harmonics[:] = list(map(lambda c: c if abs(c) > 0.0001 else 0.0, harmonics))
     # abs for complex computes magnituted
-    harmonics_mag = list(map(abs, harmonics))
-    harmonics_phase = list(map(lambda c: np.arctan2(c.imag, c.real), harmonics))
+    harmonics_mag = abs(harmonics)
+    harmonics_phase = np.array(list(map(lambda c: np.arctan2(c.imag, c.real), harmonics)))
 
+    #ax.set_xticks(list(ax.get_xticks()) + extraticks)
 
-    data_to_plot = (
-        harmonic01,
-        harmonic02,
-        waveform,
-        harmonics_mag,
-        harmonics_phase,
-    )
-    _fig, _axs = plt.subplots(len(data_to_plot), figsize=(14, 14))
+    _to_plot = [
+        {"data": harmonic01,
+         "y_lim": (harmonic01.min() - 0.4, harmonic01.max() + 0.4),
+         "y_ticks": {"minor": 0.5, "major": 1},
+         "x_ticks": {"minor": np.pi * 2, "major": np.pi * 8},
+         "title": "harmonic 1",
+         "draw_func": "plot"
+        },
+        {"data": harmonic02,
+         "y_lim": (harmonic02.min() - 0.4, harmonic02.max() + 0.4),
+         "y_ticks": {"minor": 0.5, "major": 1},
+         "x_ticks": {"minor": np.pi * 2, "major": np.pi * 8},
+         "title": "harmonic 2",
+         "draw_func": "plot"
+        },
+        {"data": waveform,
+         "y_lim": (waveform.min() - 0.4, waveform.max() + 0.4),
+         "y_ticks": {"minor": 0.5, "major": 1},
+         "title": "combined waveform",
+         "draw_func": "plot"
+        },
+        {"data": harmonics_mag,
+         "y_lim": (harmonics_mag.min() - 20, harmonics_mag.max() + 20),
+         "y_ticks": {"minor": 25, "major": 50},
+         "x_ticks_extra": {},
+         "title": "harmonics magnitude",
+         "draw_func": "bar"
+        },
+        {"data": harmonics_phase,
+         "y_lim": (harmonics_phase.min() - 0.4, harmonics_phase.max() + 0.4),
+         "y_ticks": {"minor": 0.5, "major": 1},
+         "title": "harmonics phase",
+         "draw_func": "bar"
+        },
+    ]
 
+    _fig, _axs = plt.subplots(len(_to_plot), figsize=(8, 16))
+    plt.subplots_adjust(hspace=0.8)
 
-    for i, data in enumerate(data_to_plot[:-2]):
-        _axs[i].set_ylim([data.min() - 0.4, data.max() + 0.4])
-        _axs[i].plot(time_base, data, linewidth=0.7, linestyle="solid", marker="o")
-        # _axs[i].set(xlabel='sample', ylabel='val', title='Soundwave plot')
-        _axs[i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+    for _i, _data in enumerate(_to_plot):
+        # vertical axis
+        try:
+            _axs[_i].set_ylim(_data["y_lim"])
+        except KeyError:
+            pass
 
-    _axs[-2].bar(np.arange(len(harmonics_mag)), harmonics_mag)
-    _axs[-2].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
-    _axs[-2].xaxis.set_major_locator(MultipleLocator(10))
-    _axs[-2].xaxis.set_minor_locator(MultipleLocator(5))
+        # horizontal axis
+        _x = np.arange(len(_data["data"]))
+        try:
+            _x = _data["x"]
+        except KeyError:
+            pass
 
-    _axs[-1].bar(np.arange(len(harmonics_mag)), harmonics_phase)
-    _axs[-1].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
-    _axs[-1].xaxis.set_major_locator(MultipleLocator(10))
-    _axs[-1].xaxis.set_minor_locator(MultipleLocator(5))
+        # axes ticks
+        try:
+            _axs[_i].yaxis.set_major_locator(MultipleLocator(_data["y_ticks"]["major"]))
+        except KeyError:
+            pass
+        try:
+            _axs[_i].yaxis.set_minor_locator(MultipleLocator(_data["y_ticks"]["minor"]))
+        except KeyError:
+            pass
+        try:
+            _axs[_i].xaxis.set_major_locator(MultipleLocator(_data["x_ticks"]["major"]))
+        except KeyError:
+            pass
+        try:
+            _axs[_i].xaxis.set_minor_locator(MultipleLocator(_data["x_ticks"]["minor"]))
+        except KeyError:
+            pass
+
+        # type of a plot
+        try:
+            if _data["draw_func"] == "plot":
+                _axs[_i].plot(_x, _data["data"], linewidth=0.5)
+            elif _data["draw_func"] == "bar":
+                _axs[_i].bar(_x, _data["data"], linewidth=0.5)
+            elif _data["draw_func"] == "hist":
+                _axs[_i].hist(_data["data"], bins=10)
+        except KeyError:
+            pass
+
+        _axs[_i].set(xlabel="sample", ylabel="val", title=_data["title"])
+        _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
 
     _fig
     return (
         AutoMinorLocator,
         MultipleLocator,
-        data,
-        data_to_plot,
         harmonic01,
         harmonic02,
         harmonics,
         harmonics_mag,
         harmonics_phase,
-        i,
         time_base,
         waveform,
     )
@@ -245,16 +302,7 @@ def __(MultipleLocator, fft, np, plt, time_base, waveform):
 
 
 @app.cell
-def __(harmonics, mo):
-    def filter_harmonics(harmonics, epsilon: float=0.001):
-        valid_harmonics = []
-        for i, h in enumerate(harmonics):
-            if abs(h) > epsilon or abs(h) < -1 * epsilon:
-                valid_harmonics.append({"idx": i, "value": h})
-
-        return valid_harmonics
-
-
+def __(fft, harmonics, mo):
     def result_to_table(data: dict) -> str:
         lines = []
         for element in data:
@@ -263,7 +311,6 @@ def __(harmonics, mo):
 
         return lines
 
-
     mo.vstack(
         [
             mo.md(
@@ -271,10 +318,10 @@ def __(harmonics, mo):
          Checked {len(harmonics)} possible harmonics:
          """
             ),
-            result_to_table(filter_harmonics(harmonics)),
+            result_to_table(fft.filter_harmonics(harmonics)),
         ]
     )
-    return filter_harmonics, result_to_table
+    return result_to_table,
 
 
 @app.cell
@@ -345,15 +392,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, mo):
 
 
 @app.cell
-def __(
-    MultipleLocator,
-    SAMPLE_RATE,
-    data_unpacked,
-    fft,
-    filter_harmonics,
-    np,
-    plt,
-):
+def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
     normalize_factor = np.iinfo(np.uint16).max
     normalize = lambda x: x / normalize_factor
     data_float = normalize(data_unpacked)
@@ -376,7 +415,7 @@ def __(
     print(_harmonics_windowed)
     _windowed_harmonics_mag = list(map(abs, _harmonics_windowed))
 
-    print(filter_harmonics(_windowed_harmonics_mag, 1.2))
+    print(fft.filter_harmonics(_windowed_harmonics_mag, 1.2))
     print(np.histogram(_windowed_harmonics_mag, bins=10))
 
     _to_plot = [
@@ -421,20 +460,20 @@ def __(
             pass
 
         # horizontal axis
-        x = np.arange(len(_data["data"]))
+        _x = np.arange(len(_data["data"]))
         try:
-            x = _data["x"]
+            _x = _data["x"]
         except KeyError:
             pass
 
         # type of a plot
         try:
             if _data["draw_func"] == "plot":
-                _axs[_i].plot(x, _data["data"], linewidth=0.5)
+                _axs[_i].plot(_x, _data["data"], linewidth=0.5)
                 _axs[_i].yaxis.set_major_locator(MultipleLocator(0.5))
                 _axs[_i].yaxis.set_minor_locator(MultipleLocator(.25))
             elif _data["draw_func"] == "bar":
-                _axs[_i].bar(x, _data["data"], linewidth=0.5)
+                _axs[_i].bar(_x, _data["data"], linewidth=0.5)
             elif _data["draw_func"] == "hist":
                 _axs[_i].hist(_data["data"], bins=10)
         except KeyError:
@@ -444,7 +483,7 @@ def __(
         _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
     _fig
-    return data_float, dt, normalize, normalize_factor, x
+    return data_float, dt, normalize, normalize_factor
 
 
 if __name__ == "__main__":

@@ -106,6 +106,7 @@ def params_from_file_name(filename: str):
 
     return (sample_rate, bytes_per_sample)
 
+
 def raw_data_to_wave(data: np.ndarray, output_name: str, sample_rate: int, bytes_per_sample):
     # The microphone that recorded the samples has a certain bit depth for each sample.
     # Convert to signed 16bit samples.
@@ -128,3 +129,12 @@ def raw_data_to_wave(data: np.ndarray, output_name: str, sample_rate: int, bytes
         f.setsampwidth(bytes_per_sample)
         f.setframerate(sample_rate)
         f.writeframes(soundwave.astype(np.uint16))
+
+
+def filter_harmonics(harmonics, epsilon: float=0.001):
+    valid_harmonics = []
+    for i, h in enumerate(harmonics):
+        if abs(h) > epsilon or abs(h) < -1 * epsilon:
+            valid_harmonics.append({"idx": i, "value": h})
+
+    return valid_harmonics
