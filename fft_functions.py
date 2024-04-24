@@ -71,8 +71,9 @@ def generate_window(
     window_fill_in_samples = math.floor(window_fill * len(t))
     window_offset_in_samples = math.floor(window_offset * len(t))
 
-    multiple_of_256 = window_fill_in_samples // 256
-    window_fill_in_samples = multiple_of_256 * 256
+    if to_nearest_power_of_two:
+        multiple_of_256 = window_fill_in_samples // 256
+        window_fill_in_samples = multiple_of_256 * 256
 
     window_with_padding = np.zeros(len(t))
     window = np.blackman(window_fill_in_samples)

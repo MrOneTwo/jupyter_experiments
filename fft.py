@@ -363,7 +363,7 @@ def __(
     _t = np.arange(0, len(_data_to_plot), 1)
 
     # Window out the input signal, to ensure a periodic input data.
-    _window = fft.generate_window(_t, 0.005, 0.2, to_nearest_power_of_two=True)
+    _window = fft.generate_window(_t, 0.006, 0.2, to_nearest_power_of_two=True)
     # Create an array of bools.
     _window_mask = _window != 0
 
