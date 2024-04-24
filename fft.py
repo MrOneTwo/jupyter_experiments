@@ -294,20 +294,22 @@ def __(Path, base64, fft, mo, np, struct, wave):
     SAMPLE_RATE, BYTES_PER_SAMPLE = fft.params_from_file_name(SAMPLES_FILE)
 
     data_unpacked = np.asarray(
-        [d[0] for d in struct.iter_unpack("<H", Path(SAMPLES_FILE).read_bytes())]
+        [d[0] for d in struct.iter_unpack("<h", Path(SAMPLES_FILE).read_bytes())]
     )
 
-    def data_to_wave(data):
+    def data_to_wave(data: np.ndarray):
         # The microphone that recorded the samples has a certain bit depth for each sample.
         # Convert to signed 16bit samples.
-        _data_float = data / 8192.0
-        soundwave = _data_float * np.iinfo(np.int16).max
+        normalize_factor = np.iinfo(np.uint16).max
+        normalize = lambda x: x / normalize_factor
+        _data_float = normalize(data)
+        soundwave = data
 
         with wave.open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "w") as f:
             f.setnchannels(1)
             f.setsampwidth(BYTES_PER_SAMPLE)
             f.setframerate(SAMPLE_RATE)
-            f.writeframes(soundwave.astype(np.int16))
+            f.writeframes(soundwave.astype(np.uint16))
 
     data_to_wave(data_unpacked)
 
@@ -346,25 +348,27 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, mo):
 
 
 @app.cell
-def __(SAMPLE_RATE, colors, data_unpacked, np, plt):
-    data_float = list()
-    normalize_data = lambda x: x / 8192.0
-    data_float = normalize_data(data_unpacked)
+def __(MultipleLocator, SAMPLE_RATE, data_unpacked, np, plt):
+    normalize_factor = np.iinfo(np.uint16).max
+    normalize = lambda x: x / normalize_factor
+    data_float = normalize(data_unpacked)
 
     _data_to_plot = data_float
     dt = 1.0 / SAMPLE_RATE
     _t = np.arange(0, len(_data_to_plot), 1)
 
-    _fig, _axs = plt.subplots(len((_data_to_plot, [])))
+    _fig, _axs = plt.subplots(len((_data_to_plot, [])), figsize=(8,4))
 
     for _i, _data in enumerate((_data_to_plot,)):
-        _axs[_i].set_ylim([_data.mean() - 0.05, _data.mean() + 0.05])
-        _axs[_i].plot(_t, _data, color=colors[8], linewidth=0.1)
+        _axs[_i].set_ylim([-1.1, 1.1])
+        _axs[_i].yaxis.set_major_locator(MultipleLocator(0.5))
+        _axs[_i].yaxis.set_minor_locator(MultipleLocator(.25))
+        _axs[_i].plot(_t, _data, linewidth=0.1)
         _axs[_i].set(xlabel="sample", ylabel="val", title="Soundwave plot")
         _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
     _fig
-    return data_float, dt, normalize_data
+    return data_float, dt, normalize, normalize_factor
 
 
 if __name__ == "__main__":
