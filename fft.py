@@ -341,7 +341,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, mo):
 
 
 @app.cell
-def __(MultipleLocator, SAMPLE_RATE, data_unpacked, np, plt):
+def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
     normalize_factor = np.iinfo(np.uint16).max
     normalize = lambda x: x / normalize_factor
     data_float = normalize(data_unpacked)
@@ -350,18 +350,41 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, np, plt):
     dt = 1.0 / SAMPLE_RATE
     _t = np.arange(0, len(_data_to_plot), 1)
 
+    # Window out the input signal, to ensure a periodic input data.
+    _window = fft.generate_window(_t, 0.3, 0.0)
+    # Create an array of bools.
+    _window_mask = _window != 0
+
     #_harmonics_windowed = fft.dft(
-        #np.arange(len(_t)), (data_unpacked * window)[window_mask]
+        #np.arange(len(_t)), (data_unpacked * _window)[_window_mask]
     #)
 
-    _fig, _axs = plt.subplots(len((_data_to_plot, [])), figsize=(8,4))
+    _to_plot = [
+        {"data": _data_to_plot,
+         "y_lim": (-1.1, 1.1),
+         "title": "waveform",
+        },
+        {"data": _window,
+         "y_lim": (-0.1, 1.1),
+         "title": "window"},
+        {"data": _window * _data_to_plot,
+         "y_lim": (-0.02, 0.02),
+         "title": "waveform windowed"},
+    ]
 
-    for _i, _data in enumerate((_data_to_plot,)):
-        _axs[_i].set_ylim([-1.1, 1.1])
+    _fig, _axs = plt.subplots(
+        len(_to_plot),
+        figsize=(8,9)
+    )
+
+    plt.subplots_adjust(hspace=0.8)
+
+    for _i, _data in enumerate(_to_plot):
+        _axs[_i].set_ylim(_data["y_lim"])
         _axs[_i].yaxis.set_major_locator(MultipleLocator(0.5))
         _axs[_i].yaxis.set_minor_locator(MultipleLocator(.25))
-        _axs[_i].plot(_t, _data, linewidth=0.1)
-        _axs[_i].set(xlabel="sample", ylabel="val", title="Soundwave plot")
+        _axs[_i].plot(_t, _data["data"], linewidth=0.5)
+        _axs[_i].set(xlabel="sample", ylabel="val", title=_data["title"])
         _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
     _fig
