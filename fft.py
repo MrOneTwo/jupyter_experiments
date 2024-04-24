@@ -358,13 +358,13 @@ def __(Path, base64, fft, mo, np, struct, wave):
                              SAMPLE_RATE,
                              BYTES_PER_SAMPLE
                             )
+        _wav_data = Path(SAMPLES_FILE).with_suffix(".wav").read_bytes()
     else:
         assert False, "yikes"
 
     data_unpacked = _data_unpacked
 
     # TODO(michalc): delete this, when https://github.com/marimo-team/marimo/issues/632 gets fixed
-    _wav_data = Path(SAMPLES_FILE).with_suffix(".wav").read_bytes()
     _wav_base64 = base64.b64encode(_wav_data).decode("utf-8")
 
     # with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
