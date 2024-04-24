@@ -361,7 +361,7 @@ def __(
     _t = np.arange(0, len(_data_to_plot), 1)
 
     # Window out the input signal, to ensure a periodic input data.
-    _window = fft.generate_window(_t, 0.004, 0.1)
+    _window = fft.generate_window(_t, 0.008, 0.1)
     # Create an array of bools.
     _window_mask = _window != 0
 
@@ -388,7 +388,8 @@ def __(
          "title": "window",
          "draw_func": "plot"
         },
-        {"data": _window * _data_to_plot,
+        {"data": (_window * _data_to_plot)[_window_mask],
+         "x": np.arange(len(_window))[_window_mask],
          "y_lim": (-0.02, 0.02),
          "title": "waveform windowed",
          "draw_func": "plot",
