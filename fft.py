@@ -18,15 +18,7 @@ def __():
     import wave
     import base64
     import pandas as pd
-    from plotnine import (
-        ggplot,
-        geom_point,
-        aes,
-        stat_smooth,
-        facet_wrap,
-        facet_grid,
-        theme,
-    )
+    import plotnine as p9
 
     import fft_functions as fft
 
@@ -37,24 +29,18 @@ def __():
     mo.md("# Fourier Transform")
     return (
         Path,
-        aes,
         base64,
-        facet_grid,
-        facet_wrap,
         fft,
-        geom_point,
-        ggplot,
         importlib,
         math,
         matplotlib,
         mo,
         np,
         npt,
+        p9,
         pd,
         plt,
-        stat_smooth,
         struct,
-        theme,
         wave,
     )
 
@@ -294,12 +280,19 @@ def __(
 
 
 @app.cell
-def __(aes, geom_point, ggplot, theme, waveform_pd):
+def __(np, p9, waveform_pd):
     (
-        ggplot()
-        + geom_point(waveform_pd, aes("t", "harmonic02"))
-        + geom_point(waveform_pd, aes("t", "harmonic01"))
-        + theme(figure_size=(16, 8))
+        p9.ggplot()
+        + p9.geom_point(waveform_pd, p9.aes("t", "harmonic02"))
+        + p9.geom_point(waveform_pd, p9.aes("t", "harmonic01"))
+        + p9.scale_x_continuous(
+            expand=(0, np.pi / 2),
+            breaks=(lambda x: np.arange(x[0], x[1], np.pi / 2)),
+            minor_breaks=(
+                lambda x: np.arange(x[0], x[1], np.pi / 4)
+            ),
+        )
+        + p9.theme(figure_size=(16, 8))
     )
     return
 
@@ -372,8 +365,6 @@ def __(MultipleLocator, fft, np, plt, time_base, waveform):
 
 @app.cell
 def __():
-
-
     #temp_data = pd.DataFrame({"t": time_base, "data": waveform})
     #print(temp_data)
 
