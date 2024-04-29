@@ -17,25 +17,44 @@ def __():
     import matplotlib
     import wave
     import base64
+    import pandas as pd
+    from plotnine import (
+        ggplot,
+        geom_point,
+        aes,
+        stat_smooth,
+        facet_wrap,
+        facet_grid,
+        theme,
+    )
 
     import fft_functions as fft
 
     import importlib
+
     importlib.reload(fft)
 
     mo.md("# Fourier Transform")
     return (
         Path,
+        aes,
         base64,
+        facet_grid,
+        facet_wrap,
         fft,
+        geom_point,
+        ggplot,
         importlib,
         math,
         matplotlib,
         mo,
         np,
         npt,
+        pd,
         plt,
+        stat_smooth,
         struct,
+        theme,
         wave,
     )
 
@@ -102,7 +121,15 @@ def __(mo, np):
 
 
 @app.cell
-def __(fft, importlib, np, phase_shift_slider, plt, samples_count_slider):
+def __(
+    fft,
+    importlib,
+    np,
+    pd,
+    phase_shift_slider,
+    plt,
+    samples_count_slider,
+):
     from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
     importlib.reload(fft)
@@ -117,57 +144,79 @@ def __(fft, importlib, np, phase_shift_slider, plt, samples_count_slider):
     _, harmonic02 = fft.Waveform(
         frequency=12, amplitude=2, resolution=int(samples_count_slider.value)
     ).get_wave()
-    # _, waveform03 = Waveform(cycles=5).get_wave()
 
-    waveform = harmonic01 + harmonic02
-
+    waveform_pd = pd.DataFrame(
+        {
+            "t": time_base,
+            "harmonic01": harmonic01,
+            "harmonic02": harmonic02,
+            "sum": harmonic01 + harmonic02,
+        }
+    )
+    waveform = waveform_pd["sum"]
 
     # Here we have the information split over real and imaginary part, depending
     # on if the harmonics resemble cos or sin more.
-    harmonics = fft.dft(time_base, waveform)
+    harmonics = fft.dft(time_base, waveform_pd["sum"])
     # Filter out the almost 0 values. It's especially important for computing the
     # phase shift, with arctan2. That's because two very small number, divided by
     # each other, will result in a legit value: 0.00000002/0.00000001 = 2.
     harmonics[:] = list(map(lambda c: c if abs(c) > 0.0001 else 0.0, harmonics))
     # abs for complex computes magnituted
     harmonics_mag = abs(harmonics)
-    harmonics_phase = np.array(list(map(lambda c: np.arctan2(c.imag, c.real), harmonics)))
+    harmonics_phase = np.array(
+        list(map(lambda c: np.arctan2(c.imag, c.real), harmonics))
+    )
 
-    #ax.set_xticks(list(ax.get_xticks()) + extraticks)
+    # ax.set_xticks(list(ax.get_xticks()) + extraticks)
 
     _to_plot = [
-        {"data": harmonic01,
-         "y_lim": (harmonic01.min() - 0.4, harmonic01.max() + 0.4),
-         "y_ticks": {"minor": 0.5, "major": 1},
-         "x_ticks": {"minor": np.pi * 2, "major": np.pi * 8},
-         "title": "harmonic 1",
-         "draw_func": "plot"
+        {
+            "data": waveform_pd["harmonic01"],
+            "y_lim": (
+                waveform_pd["harmonic01"].min() - 0.4,
+                waveform_pd["harmonic01"].max() + 0.4,
+            ),
+            "y_ticks": {"minor": 0.5, "major": 1},
+            "x_ticks": {"minor": np.pi * 2, "major": np.pi * 8},
+            "title": "harmonic 1",
+            "draw_func": "plot",
         },
-        {"data": harmonic02,
-         "y_lim": (harmonic02.min() - 0.4, harmonic02.max() + 0.4),
-         "y_ticks": {"minor": 0.5, "major": 1},
-         "x_ticks": {"minor": np.pi * 2, "major": np.pi * 8},
-         "title": "harmonic 2",
-         "draw_func": "plot"
+        {
+            "data": waveform_pd["harmonic02"],
+            "y_lim": (
+                waveform_pd["harmonic02"].min() - 0.4,
+                waveform_pd["harmonic02"].max() + 0.4,
+            ),
+            "y_ticks": {"minor": 0.5, "major": 1},
+            "x_ticks": {"minor": np.pi * 2, "major": np.pi * 8},
+            "title": "harmonic 2",
+            "draw_func": "plot",
         },
-        {"data": waveform,
-         "y_lim": (waveform.min() - 0.4, waveform.max() + 0.4),
-         "y_ticks": {"minor": 0.5, "major": 1},
-         "title": "combined waveform",
-         "draw_func": "plot"
+        {
+            "data": waveform_pd["harmonic01"] + waveform_pd["harmonic02"],
+            "y_lim": (
+                waveform_pd["sum"].min() - 0.4,
+                waveform_pd["sum"].max() + 0.4,
+            ),
+            "y_ticks": {"minor": 0.5, "major": 1},
+            "title": "combined waveform",
+            "draw_func": "plot",
         },
-        {"data": harmonics_mag,
-         "y_lim": (harmonics_mag.min() - 20, harmonics_mag.max() + 20),
-         "y_ticks": {"minor": 25, "major": 50},
-         "x_ticks_extra": {},
-         "title": "harmonics magnitude",
-         "draw_func": "bar"
+        {
+            "data": harmonics_mag,
+            "y_lim": (harmonics_mag.min() - 20, harmonics_mag.max() + 20),
+            "y_ticks": {"minor": 25, "major": 50},
+            "x_ticks_extra": {},
+            "title": "harmonics magnitude",
+            "draw_func": "bar",
         },
-        {"data": harmonics_phase,
-         "y_lim": (harmonics_phase.min() - 0.4, harmonics_phase.max() + 0.4),
-         "y_ticks": {"minor": 0.5, "major": 1},
-         "title": "harmonics phase",
-         "draw_func": "bar"
+        {
+            "data": harmonics_phase,
+            "y_lim": (harmonics_phase.min() - 0.4, harmonics_phase.max() + 0.4),
+            "y_ticks": {"minor": 0.5, "major": 1},
+            "title": "harmonics phase",
+            "draw_func": "bar",
         },
     ]
 
@@ -190,19 +239,27 @@ def __(fft, importlib, np, phase_shift_slider, plt, samples_count_slider):
 
         # axes ticks
         try:
-            _axs[_i].yaxis.set_major_locator(MultipleLocator(_data["y_ticks"]["major"]))
+            _axs[_i].yaxis.set_major_locator(
+                MultipleLocator(_data["y_ticks"]["major"])
+            )
         except KeyError:
             pass
         try:
-            _axs[_i].yaxis.set_minor_locator(MultipleLocator(_data["y_ticks"]["minor"]))
+            _axs[_i].yaxis.set_minor_locator(
+                MultipleLocator(_data["y_ticks"]["minor"])
+            )
         except KeyError:
             pass
         try:
-            _axs[_i].xaxis.set_major_locator(MultipleLocator(_data["x_ticks"]["major"]))
+            _axs[_i].xaxis.set_major_locator(
+                MultipleLocator(_data["x_ticks"]["major"])
+            )
         except KeyError:
             pass
         try:
-            _axs[_i].xaxis.set_minor_locator(MultipleLocator(_data["x_ticks"]["minor"]))
+            _axs[_i].xaxis.set_minor_locator(
+                MultipleLocator(_data["x_ticks"]["minor"])
+            )
         except KeyError:
             pass
 
@@ -232,7 +289,19 @@ def __(fft, importlib, np, phase_shift_slider, plt, samples_count_slider):
         harmonics_phase,
         time_base,
         waveform,
+        waveform_pd,
     )
+
+
+@app.cell
+def __(aes, geom_point, ggplot, theme, waveform_pd):
+    (
+        ggplot()
+        + geom_point(waveform_pd, aes("t", "harmonic02"))
+        + geom_point(waveform_pd, aes("t", "harmonic01"))
+        + theme(figure_size=(16, 8))
+    )
+    return
 
 
 @app.cell
@@ -299,6 +368,21 @@ def __(MultipleLocator, fft, np, plt, time_base, waveform):
         windowed_harmonics_mag,
         windowed_harmonics_phase,
     )
+
+
+@app.cell
+def __():
+
+
+    #temp_data = pd.DataFrame({"t": time_base, "data": waveform})
+    #print(temp_data)
+
+    #(
+        #ggplot(temp_data, aes("t", "data"))
+        #+ geom_point()
+        #+ theme(figure_size=(16, 8))
+    #)
+    return
 
 
 @app.cell
