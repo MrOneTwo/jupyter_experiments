@@ -299,7 +299,7 @@ def __(np, p9, waveform_pd):
             breaks=(lambda x: np.arange(x[0], x[1], np.pi / 2)),
             minor_breaks=(lambda x: np.arange(x[0], x[1], np.pi / 4)),
         )
-        + p9.theme(figure_size=(16, 8))
+        + p9.theme(figure_size=(16, 4))
     )
     return
 
