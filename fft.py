@@ -283,14 +283,20 @@ def __(
 def __(np, p9, waveform_pd):
     (
         p9.ggplot()
+        + p9.geom_line(
+            waveform_pd,
+            p9.aes(
+                "t",
+                "harmonic02",
+            ),
+        )
+        + p9.geom_line(waveform_pd, p9.aes("t", "harmonic01"))
         + p9.geom_point(waveform_pd, p9.aes("t", "harmonic02"))
         + p9.geom_point(waveform_pd, p9.aes("t", "harmonic01"))
         + p9.scale_x_continuous(
             expand=(0, np.pi / 2),
             breaks=(lambda x: np.arange(x[0], x[1], np.pi / 2)),
-            minor_breaks=(
-                lambda x: np.arange(x[0], x[1], np.pi / 4)
-            ),
+            minor_breaks=(lambda x: np.arange(x[0], x[1], np.pi / 4)),
         )
         + p9.theme(figure_size=(16, 8))
     )
