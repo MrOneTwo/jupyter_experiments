@@ -6,12 +6,15 @@ import plotnine as p9
 from plotnine.animation import PlotnineAnimation
 
 # for animation in the notebook
-from matplotlib import rc
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
-#rc("animation", html="html5")
+# mpl.rc is the same as matplotlib.pyplot.rc - different namespaces.
+# animation.html=html5 uses HTML5 video tag. Alternative is jshtml.
+# For example the animation.writer is set to ffmpeg by default.
+mpl.rc("animation", html="html5")
 
-
-samples_count = 25
+samples_count = 13 * 1
 
 def plot(hot_sample):
     df = pd.DataFrame({
@@ -29,7 +32,7 @@ def plot(hot_sample):
 
     p = (
         p9.ggplot(df)
-        + p9.geom_point(p9.aes("x", "y", color="col"), size=0.7)
+        + p9.geom_line(p9.aes("x", "y", color="col"), size=0.7)
         + p9.geom_point(p9.aes("x", "zeros", color="col"), size=0.1)
         + p9.scale_color_gradient(low="black", high="red")
         + p9.geom_vline(p9.aes(xintercept=[(hot_sample/(samples_count - 1)) * 2 * np.pi]), alpha=0.2)
@@ -39,9 +42,10 @@ def plot(hot_sample):
             breaks = np.arange(0, 2 * np.pi + np.pi / 4, np.pi / 4),
             minor_breaks = (lambda x: np.arange(x[0], x[1], np.pi / 8)),
         )
-        # + p9.theme_matplotlib()
+        + p9.theme_bw()
         + p9.theme(
             # plot_background=p9.element_rect(fill="#f0f0f0"),
+            # figure_size is in inches
             figure_size=(12, 8)
         )
     )
