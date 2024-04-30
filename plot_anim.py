@@ -11,7 +11,7 @@ from matplotlib import rc
 #rc("animation", html="html5")
 
 
-samples_count = 24
+samples_count = 25
 
 def plot(hot_sample):
     df = pd.DataFrame({
@@ -21,18 +21,23 @@ def plot(hot_sample):
         "zeros": np.zeros(samples_count),
     })
 
-    df["col"][hot_sample] = 120
+    df.loc[hot_sample].at['col'] = 120
+
+    def _breaks(limits):
+        print(limits)
+        return np.arange(limits[0], limits[1], np.pi/4)
 
     p = (
         p9.ggplot(df)
         + p9.geom_point(p9.aes("x", "y", color="col"), size=0.7)
         + p9.geom_point(p9.aes("x", "zeros", color="col"), size=0.1)
         + p9.scale_color_gradient(low="black", high="red")
-        + p9.geom_vline(p9.aes(xintercept=(hot_sample/samples_count) * 2 * np.pi, alpha=0.2))
-        + p9.lims(
-            # All the plots have scales with the same limits
-            x=(0, 2 * np.pi),
-            y=(-1, 1)
+        + p9.geom_vline(p9.aes(xintercept=[(hot_sample/(samples_count - 1)) * 2 * np.pi]), alpha=0.2)
+        + p9.scale_x_continuous(
+            expand = (0, np.pi/8),
+            # np.arange doesn't include the last value, thus add it to stop.
+            breaks = np.arange(0, 2 * np.pi + np.pi / 4, np.pi / 4),
+            minor_breaks = (lambda x: np.arange(x[0], x[1], np.pi / 8)),
         )
         # + p9.theme_matplotlib()
         + p9.theme(
@@ -45,6 +50,6 @@ def plot(hot_sample):
 
 # It is better to use a generator instead of a list
 plots = (plot(k) for k in np.arange(0, samples_count))
-ani = PlotnineAnimation(plots, interval=250, repeat_delay=500)
-ani.save('./animation.mp4', dpi=150)
+ani = PlotnineAnimation(plots, interval=500, repeat_delay=500)
+ani.save('./animation.mp4', dpi=80)
 #ani
