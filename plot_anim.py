@@ -14,12 +14,14 @@ import matplotlib.pyplot as plt
 # For example the animation.writer is set to ffmpeg by default.
 mpl.rc("animation", html="html5")
 
-samples_count = 13 * 1
+samples_count = 25 * 1
+
+X_SPACE = (0, 4 * np.pi)
 
 def plot(hot_sample):
     df = pd.DataFrame({
-        "x": np.linspace(0, 2 * np.pi, num=samples_count),
-        "y": np.sin(np.linspace(0, 2 * np.pi, num=samples_count)),
+        "x": np.linspace(X_SPACE[0], X_SPACE[1], num=samples_count),
+        "y": np.sin(np.linspace(X_SPACE[0], X_SPACE[1], num=samples_count)),
         "col": np.zeros(samples_count),
         "zeros": np.zeros(samples_count),
     })
@@ -30,16 +32,23 @@ def plot(hot_sample):
         print(limits)
         return np.arange(limits[0], limits[1], np.pi/4)
 
+    def _labels(breaks):
+        labels = []
+        for i, b in enumerate(breaks):
+            labels.append(str(i))
+        return labels
+
     p = (
         p9.ggplot(df)
         + p9.geom_line(p9.aes("x", "y", color="col"), size=0.7)
         + p9.geom_point(p9.aes("x", "zeros", color="col"), size=0.1)
         + p9.scale_color_gradient(low="black", high="red")
-        + p9.geom_vline(p9.aes(xintercept=[(hot_sample/(samples_count - 1)) * 2 * np.pi]), alpha=0.2)
+        + p9.geom_vline(p9.aes(xintercept=[(hot_sample/(samples_count - 1)) * X_SPACE[1]]), alpha=0.2)
         + p9.scale_x_continuous(
             expand = (0, np.pi/8),
             # np.arange doesn't include the last value, thus add it to stop.
-            breaks = np.arange(0, 2 * np.pi + np.pi / 4, np.pi / 4),
+            breaks = np.arange(X_SPACE[0], X_SPACE[1] + np.pi / 4, np.pi / 4),
+            # labels = _labels,
             minor_breaks = (lambda x: np.arange(x[0], x[1], np.pi / 8)),
         )
         + p9.theme_bw()
