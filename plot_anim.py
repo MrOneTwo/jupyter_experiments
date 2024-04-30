@@ -16,7 +16,7 @@ mpl.rc("animation", html="html5")
 
 samples_count = 25 * 1
 
-X_SPACE = (0, 4 * np.pi)
+X_SPACE = (0, 2 * np.pi)
 
 def plot(hot_sample):
     df = pd.DataFrame({
@@ -26,11 +26,12 @@ def plot(hot_sample):
         "zeros": np.zeros(samples_count),
     })
 
-    df.loc[hot_sample].at['col'] = 120
+    df.loc[hot_sample].at['col'] = 256 + 120
 
     def _breaks(limits):
-        print(limits)
-        return np.arange(limits[0], limits[1], np.pi/4)
+        step_size = X_SPACE[1] / (samples_count - 1)
+        breaks = np.arange(X_SPACE[0], X_SPACE[1] + step_size, step_size)
+        return breaks
 
     def _labels(breaks):
         labels = []
@@ -40,15 +41,15 @@ def plot(hot_sample):
 
     p = (
         p9.ggplot(df)
-        + p9.geom_line(p9.aes("x", "y", color="col"), size=0.7)
+        + p9.geom_point(p9.aes("x", "y", color="col"), size=0.7)
         + p9.geom_point(p9.aes("x", "zeros", color="col"), size=0.1)
         + p9.scale_color_gradient(low="black", high="red")
         + p9.geom_vline(p9.aes(xintercept=[(hot_sample/(samples_count - 1)) * X_SPACE[1]]), alpha=0.2)
         + p9.scale_x_continuous(
             expand = (0, np.pi/8),
             # np.arange doesn't include the last value, thus add it to stop.
-            breaks = np.arange(X_SPACE[0], X_SPACE[1] + np.pi / 4, np.pi / 4),
-            # labels = _labels,
+            breaks = _breaks,
+            labels = _labels,
             minor_breaks = (lambda x: np.arange(x[0], x[1], np.pi / 8)),
         )
         + p9.theme_bw()
