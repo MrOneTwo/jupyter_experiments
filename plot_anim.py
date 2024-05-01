@@ -41,7 +41,7 @@ def plot(hot_sample):
 
     p = (
         p9.ggplot(df)
-        + p9.geom_point(p9.aes("x", "y", color="col"), size=0.7)
+        + p9.geom_point(p9.aes("x", "y", color="col"), size=0.9)
         + p9.geom_point(p9.aes("x", "zeros", color="col"), size=0.1)
         + p9.scale_color_gradient(low="black", high="red")
         + p9.geom_vline(p9.aes(xintercept=[(hot_sample/(samples_count - 1)) * X_SPACE[1]]), alpha=0.2)
@@ -56,8 +56,14 @@ def plot(hot_sample):
         + p9.theme(
             # plot_background=p9.element_rect(fill="#f0f0f0"),
             # figure_size is in inches
-            figure_size=(12, 8)
+            figure_size=(12, 8),
+            plot_margin_left=0.08,
+            plot_margin_right=0.08,
+            plot_margin_top=0.08,
+            plot_margin_bottom=0.08,
+            legend_position='none',
         )
+        + p9.labs(x="samples")
     )
     return p
 
@@ -65,5 +71,5 @@ def plot(hot_sample):
 # It is better to use a generator instead of a list
 plots = (plot(k) for k in np.arange(0, samples_count))
 ani = PlotnineAnimation(plots, interval=500, repeat_delay=500)
-ani.save('./animation.mp4', dpi=80)
+ani.save('./animation.mp4', dpi=70)
 #ani

@@ -39,7 +39,7 @@ def dft_only_sin(
     return harmonics
 
 
-def dft(
+def dft_naive(
     t: npt.NDArray[float], waveform: npt.NDArray[float]
 ) -> npt.NDArray[complex]:
     N = len(waveform)
