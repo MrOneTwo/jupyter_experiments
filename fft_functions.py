@@ -59,6 +59,18 @@ def dft_naive(
     return harmonics
 
 
+def dft(samples: npt.NDArray[float]):
+    N = len(samples)
+
+    # Lets precompute the array.
+    X_k = np.zeros([N, N], dtype=complex)
+    for k in range(N):
+        for n in range(N):
+            X_k[k][n] = complex(np.cos(2 * np.pi * (k / N)  * n), -1 * np.sin(2 * np.pi * (k / N) * n))
+
+    return X_k.dot(samples)
+
+
 def generate_window(
     t: npt.NDArray[float], window_fill: float, window_offset: float, to_nearest_power_of_two: bool=False
 ) -> npt.NDArray[float]:

@@ -143,7 +143,7 @@ def __(
 
     # Here we have the information split over real and imaginary part, depending
     # on if the harmonics resemble cos or sin more.
-    harmonics = fft.dft_naive(time_base, waveform_pd["sum"])
+    harmonics = fft.dft(waveform_pd["sum"])
     # Filter out the almost 0 values. It's especially important for computing the
     # phase shift, with arctan2. That's because two very small number, divided by
     # each other, will result in a legit value: 0.00000002/0.00000001 = 2.
@@ -321,8 +321,8 @@ def __(MultipleLocator, fft, np, plt, time_base, waveform):
     # Create an array of bools.
     window_mask = window != 0
 
-    harmonics_windowed = fft.dft_naive(
-        np.arange(len(waveform[window_mask])), (waveform * window)[window_mask]
+    harmonics_windowed = fft.dft(
+        (waveform * window)[window_mask]
     )
     windowed_harmonics_mag = list(map(abs, harmonics_windowed))
     windowed_harmonics_phase = list(map(lambda c: np.arctan2(c.imag, c.real), harmonics_windowed))
@@ -488,10 +488,7 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
     # Create an array of bools.
     _window_mask = _window != 0
 
-    _harmonics_windowed = fft.dft_naive(
-        np.arange(
-            len((data_float * _window)[_window_mask])
-        ),
+    _harmonics_windowed = fft.dft(
         (data_float * _window)[_window_mask]
     )
     print(_harmonics_windowed)
