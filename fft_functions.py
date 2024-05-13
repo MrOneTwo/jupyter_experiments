@@ -93,6 +93,12 @@ def fft(x):
         return X
 
 
+def bin_to_freq(sampling_freq: int, bin_index: int, samples_count: int) -> float:
+    base_period = (sampling_freq / samples_count)
+    freq = bin_index * base_period
+    return freq
+
+
 def generate_window(
     t: npt.NDArray[float],
     window_fill: float,

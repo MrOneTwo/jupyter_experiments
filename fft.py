@@ -102,7 +102,11 @@ def __(mo, np):
         label="Phase shift of the first waveform",
         debounce=True,
     )
-    mo.vstack([mo.md(f"{samples_count_slider}"), mo.md(f"{phase_shift_slider}"), mo.md("Notice we're using fully periodic signals here. That's what Fourier Transform expects. If one of the harmonics isn't periodic, the FT will behave strangely. That's why in practice we use windowing.")])
+    mo.vstack([mo.md(f"{samples_count_slider}"),
+               mo.md(f"{phase_shift_slider}"),
+               mo.md("Notice we're using fully periodic signals here. That's what Fourier Transform expects. If one of the harmonics isn't periodic, the FT will behave strangely. That's why in practice we use windowing."),
+               mo.md("The spectrum of the signal is reflected. That's because of the negative frequencies the transform uses. It's normal to just ignore frequencies above the Nyquist frequency.")
+              ])
     return phase_shift_slider, samples_count_slider
 
 
@@ -317,7 +321,7 @@ def __(mo):
 @app.cell
 def __(MultipleLocator, fft, np, plt, time_base, waveform):
     # Window out the input signal, to ensure a periodic input data.
-    window = fft.generate_window(time_base, 0.5, 0.3)
+    window = fft.generate_window(time_base, 0.6, 0.3, False)
     # Create an array of bools.
     window_mask = window != 0
 
@@ -326,6 +330,7 @@ def __(MultipleLocator, fft, np, plt, time_base, waveform):
     )
     windowed_harmonics_mag = list(map(abs, harmonics_windowed))
     windowed_harmonics_phase = list(map(lambda c: np.arctan2(c.imag, c.real), harmonics_windowed))
+
 
     _fig, _axs = plt.subplots(5, figsize=(14, 14))
 
@@ -468,8 +473,10 @@ def __(Path, base64, fft, mo, np, struct, wave):
 
 
 @app.cell
-def __(BYTES_PER_SAMPLE, SAMPLE_RATE, mo):
-    mo.md(f"Loaded the {SAMPLE_RATE}Hz, {BYTES_PER_SAMPLE} byte sample data.")
+def __(BYTES_PER_SAMPLE, SAMPLE_RATE, fft, mo):
+    mo.vstack([mo.md(f"Loaded the {SAMPLE_RATE}Hz, {BYTES_PER_SAMPLE} byte sample data."),
+               mo.md(f"The current cut off frequency is {fft.bin_to_freq(SAMPLE_RATE, 24, 512)}")
+              ])
     return
 
 
@@ -484,15 +491,16 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
     _t = np.arange(0, len(_data_to_plot), 1)
 
     # Window out the input signal, to ensure a periodic input data.
-    _window = fft.generate_window_n(_t, 2048, 0.2)
+    _window = fft.generate_window_n(_t, 1024, 0.1)
     # Create an array of bools.
     _window_mask = _window != 0
-
-    print(len((data_float * _window)[_window_mask]))
 
     _harmonics_windowed = fft.fft(
         (data_float * _window)[_window_mask]
     )
+    _frequencies = [ fft.bin_to_freq(SAMPLE_RATE, k, 1024) for k in range(len(_harmonics_windowed)) ]
+    _frequency_bin_of_interest_max = 24
+
     print(_harmonics_windowed)
     _windowed_harmonics_mag = list(map(abs, _harmonics_windowed))
 
@@ -520,7 +528,9 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
          "title": "histogram",
          "draw_func": "hist",
         },
-        {"data": _windowed_harmonics_mag[:len(_windowed_harmonics_mag)//2],
+        {"data": _windowed_harmonics_mag[:_frequency_bin_of_interest_max],
+         "x": _frequencies[:_frequency_bin_of_interest_max],
+         "x_ticks": {"major": _frequencies[:_frequency_bin_of_interest_max][1]},
          "title": "DFT",
          "draw_func": "bar",
         }
@@ -528,7 +538,7 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
 
     _fig, _axs = plt.subplots(
         len(_to_plot),
-        figsize=(8,12)
+        figsize=(10,16)
     )
 
     plt.subplots_adjust(hspace=0.8)
@@ -544,6 +554,19 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
         _x = np.arange(len(_data["data"]))
         try:
             _x = _data["x"]
+        except KeyError:
+            pass
+
+        try:
+            _axs[_i].xaxis.set_major_locator(
+                MultipleLocator(_data["x_ticks"]["major"])
+            )
+        except KeyError:
+            pass
+        try:
+            _axs[_i].xaxis.set_minor_locator(
+                MultipleLocator(_data["x_ticks"]["minor"])
+            )
         except KeyError:
             pass
 
