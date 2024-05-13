@@ -70,9 +70,34 @@ def dft(samples: npt.NDArray[float]):
 
     return X_k.dot(samples)
 
+def fft(x):
+    """
+    A recursive implementation of
+    the 1D Cooley-Tukey FFT, the
+    input should have a length of
+    power of 2.
+    """
+    N = len(x)
+
+    if N == 1:
+        return x
+    else:
+        X_even = fft(x[::2])
+        X_odd = fft(x[1::2])
+        # Prepare the factors for phase shifting the complex frequencies.
+        # Phase shifting means "vector rotating".
+        factor = np.exp(-2j*np.pi*np.arange(N)/ N)
+
+        X = np.concatenate([X_even+factor[:int(N/2)]*X_odd,
+                            X_even+factor[int(N/2):]*X_odd])
+        return X
+
 
 def generate_window(
-    t: npt.NDArray[float], window_fill: float, window_offset: float, to_nearest_power_of_two: bool=False
+    t: npt.NDArray[float],
+    window_fill: float,
+    window_offset: float,
+    to_nearest_power_of_two: bool=False
 ) -> npt.NDArray[float]:
     """
     # windowing: https://numpy.org/doc/stable/reference/routines.window.html
@@ -94,6 +119,24 @@ def generate_window(
     window_with_padding[
         window_offset_in_samples : window_offset_in_samples
         + window_fill_in_samples
+    ] = window
+    return window_with_padding
+
+
+def generate_window_n(
+    t: npt.NDArray[float],
+    window_width_in_samples: int,
+    window_offset: float
+) -> npt.NDArray[float]:
+    window_offset_in_samples = math.floor(window_offset * len(t))
+
+    window_with_padding = np.zeros(len(t))
+    window = np.blackman(window_width_in_samples)
+
+    # Insert the offset window.
+    window_with_padding[
+        window_offset_in_samples : window_offset_in_samples
+        + window_width_in_samples
     ] = window
     return window_with_padding
 
