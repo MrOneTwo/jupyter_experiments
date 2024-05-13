@@ -475,7 +475,7 @@ def __(Path, base64, fft, mo, np, struct, wave):
 @app.cell
 def __(BYTES_PER_SAMPLE, SAMPLE_RATE, fft, mo):
     mo.vstack([mo.md(f"Loaded the {SAMPLE_RATE}Hz, {BYTES_PER_SAMPLE} byte sample data."),
-               mo.md(f"The current cut off frequency is {fft.bin_to_freq(SAMPLE_RATE, 24, 512)}")
+               mo.md(f"The current cut off frequency is {fft.bin_to_freq(SAMPLE_RATE, 24, 1024)} Hz")
               ])
     return
 
