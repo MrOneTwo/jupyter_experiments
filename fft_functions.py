@@ -3,6 +3,7 @@ import numpy as np
 import numpy.typing as npt
 import math
 import wave
+import typing
 
 
 @dataclass
@@ -192,7 +193,7 @@ def raw_data_to_wave(data: np.ndarray, output_name: str, sample_rate: int, bytes
         f.writeframes(soundwave.astype(np.uint16))
 
 
-def filter_harmonics(harmonics, epsilon: float=0.001):
+def filter_harmonics(harmonics: npt.NDArray[np.complex128], epsilon: float=0.001)-> typing.List[dict]:
     valid_harmonics = []
     for i, h in enumerate(harmonics):
         if abs(h) > epsilon or abs(h) < -1 * epsilon:

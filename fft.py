@@ -102,10 +102,13 @@ def __(mo, np):
         label="Phase shift of the first waveform",
         debounce=True,
     )
-    mo.vstack([mo.md(f"{samples_count_slider}"),
-               mo.md(f"{phase_shift_slider}"),
+    mo.vstack([
+               mo.md("Lets generate a waveform made out of two simple sinusoids."),
                mo.md("Notice we're using fully periodic signals here. That's what Fourier Transform expects. If one of the harmonics isn't periodic, the FT will behave strangely. That's why in practice we use windowing."),
-               mo.md("The spectrum of the signal is reflected. That's because of the negative frequencies the transform uses. It's normal to just ignore frequencies above the Nyquist frequency.")
+               mo.md("The spectrum of the signal is reflected. That's because of the negative frequencies the transform uses. It's normal to just ignore frequencies above the Nyquist frequency."),
+               mo.md("Sliders below allow you to this case."),
+               mo.md(f"{samples_count_slider}"),
+               mo.md(f"{phase_shift_slider}"),
               ])
     return phase_shift_slider, samples_count_slider
 
@@ -310,11 +313,19 @@ def __(np, p9, waveform_pd):
 
 @app.cell
 def __(mo):
-    mo.md(r"""
-    If the transform's input data isn't periodic you might see spectral leakage and aliasing effects.
-
-    In order to force input data to be periodic, windowing is used.
-    """)
+    mo.vstack(
+        [
+            mo.md(
+                "If the transform's input data isn't periodic you might see spectral leakage and aliasing effects."
+            ),
+            mo.md(
+                "In order to force input data to be periodic, windowing is used."
+            ),
+            mo.md(
+                "I reuse the waveform from the previous example. This time I'm windowing that waveform, to make that data periodic."
+            ),
+        ]
+    )
     return
 
 
@@ -332,7 +343,8 @@ def __(MultipleLocator, fft, np, plt, time_base, waveform):
     windowed_harmonics_phase = list(map(lambda c: np.arctan2(c.imag, c.real), harmonics_windowed))
 
 
-    _fig, _axs = plt.subplots(5, figsize=(14, 14))
+    _fig, _axs = plt.subplots(5, figsize=(14, 16))
+    plt.subplots_adjust(hspace=0.4)
 
     _axs[0].set_ylim([waveform.min() - 0.4, waveform.max() + 0.4])
     _axs[0].plot(time_base, waveform, linewidth=0.7, linestyle="solid", marker="o")
@@ -400,6 +412,7 @@ def __(fft, harmonics, mo):
 
     mo.vstack(
         [
+            mo.md("Lets present the results in an easily readable table."),
             mo.md(
                 f"""
          Checked {len(harmonics)} possible harmonics:
@@ -419,7 +432,10 @@ def __(mo):
 
 @app.cell
 def __(mo):
-    mo.md("## Analysis of recorded data")
+    mo.vstack([
+        mo.md("## Analysis of recorded data"),
+        mo.md("This time I'm reading data from a file, and compute its Fourier transform."),
+    ])
     return
 
 
