@@ -457,7 +457,7 @@ def __(Path, base64, fft, mo, np, struct, wave):
     # with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
     mo.vstack(
         [
-            mo.md("Example sound file:"),
+            mo.md(f"Example sound file {SAMPLES_FILE}:"),
             #mo.audio(src="samples.wav"),
             # TODOD(michalc): delete this, when https://github.com/marimo-team/marimo/issues/632 gets fixed
             mo.Html(
