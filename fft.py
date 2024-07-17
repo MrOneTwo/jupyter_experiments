@@ -520,6 +520,8 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
     print(_harmonics_windowed)
     _windowed_harmonics_mag = list(map(abs, _harmonics_windowed))
 
+    # TODO(michalc): filter_harmonics work with an array of complex numbers
+    # not list of floats.
     print(fft.filter_harmonics(_windowed_harmonics_mag, 1.2))
     print(np.histogram(_windowed_harmonics_mag, bins=10))
 
