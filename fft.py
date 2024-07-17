@@ -497,7 +497,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, fft, mo):
 
 
 @app.cell
-def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
+def __(SAMPLE_RATE, data_unpacked, fft, np, plt):
     normalize_factor = np.iinfo(np.uint16).max
     normalize = lambda x: x / normalize_factor
     data_float = normalize(data_unpacked)
@@ -511,10 +511,11 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
     # Create an array of bools.
     _window_mask = _window != 0
 
-    _harmonics_windowed = fft.fft(
-        (data_float * _window)[_window_mask]
-    )
-    _frequencies = [ fft.bin_to_freq(SAMPLE_RATE, k, 1024) for k in range(len(_harmonics_windowed)) ]
+    _harmonics_windowed = fft.fft((data_float * _window)[_window_mask])
+    _frequencies = [
+        fft.bin_to_freq(SAMPLE_RATE, k, 1024)
+        for k in range(len(_harmonics_windowed))
+    ]
     _frequency_bin_of_interest_max = 24
 
     print(_harmonics_windowed)
@@ -526,82 +527,69 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
     print(np.histogram(_windowed_harmonics_mag, bins=10))
 
     _to_plot = [
-        {"data": _data_to_plot,
-         "y_lim": (-1.1, 1.1),
-         "title": "waveform",
-         "draw_func": "plot"
+        {
+            "data": _data_to_plot,
+            "ylim": (-1.1, 1.1),
+            "title": "waveform",
+            "draw_func": "plot",
+            "xticks": [i*SAMPLE_RATE for i in range(10)],
+            "xticklabels": [i for i in range(10)],
         },
-        {"data": _window,
-         "y_lim": (-0.1, 1.1),
-         "title": "window",
-         "draw_func": "plot"
+        {
+            "data": _window,
+            "ylim": (-0.1, 1.1),
+            "title": "window",
+            "draw_func": "plot",
+            "xticks": [i*SAMPLE_RATE for i in range(10)],
+            "xticklabels": [i for i in range(10)],
         },
-        {"data": (_window * _data_to_plot)[_window_mask],
-         "x": np.arange(len(_window))[_window_mask],
-         "y_lim": (-0.02, 0.02),
-         "title": "waveform windowed",
-         "draw_func": "plot",
+        {
+            "data": (_window * _data_to_plot)[_window_mask],
+            "x": np.arange(len(_window))[_window_mask],
+            "ylim": (-0.02, 0.02),
+            "title": "waveform windowed",
+            "draw_func": "plot",
+            "xlabel": "samples",
         },
-        {"data": _windowed_harmonics_mag[:len(_windowed_harmonics_mag)//2],
-         "title": "histogram",
-         "draw_func": "hist",
+        {
+            "data": _windowed_harmonics_mag[: len(_windowed_harmonics_mag) // 2],
+            "title": "histogram",
+            "draw_func": "hist",
+            "xlabel": "samples",
         },
-        {"data": _windowed_harmonics_mag[:_frequency_bin_of_interest_max],
-         "x": _frequencies[:_frequency_bin_of_interest_max],
-         "x_ticks": {"major": _frequencies[:_frequency_bin_of_interest_max][1]},
-         "title": "DFT",
-         "draw_func": "bar",
-        }
+        {
+            "data": _windowed_harmonics_mag[:_frequency_bin_of_interest_max],
+            "x": _frequencies[:_frequency_bin_of_interest_max],
+            #"xticks": {"major": _frequencies[:_frequency_bin_of_interest_max][1]},
+            "title": "DFT",
+            "draw_func": "bar",
+            "xlabel": "samples",
+            # Every Nth frequency.
+            "xticks": _frequencies[::4],
+            "xticklabels": _frequencies[::4],
+        },
     ]
 
-    _fig, _axs = plt.subplots(
-        len(_to_plot),
-        figsize=(10,16)
-    )
+    _fig, _axs = plt.subplots(len(_to_plot), figsize=(10, 16))
 
     plt.subplots_adjust(hspace=0.8)
 
     for _ax, _data in zip(_axs, _to_plot):
-        # vertical axis
-        try:
-            _ax.set_ylim(_data["y_lim"])
-        except KeyError:
-            pass
+        # Remove the keys that the set() function doesn't recognize.
+        _y = _data.pop("data")
+        _x = _data.pop("x", np.arange(len(_y)))
+        _draw_func = _data.pop("draw_func")
 
-        # horizontal axis
-        _x = np.arange(len(_data["data"]))
-        try:
-            _x = _data["x"]
-        except KeyError:
-            pass
+        # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html
+        _ax.set(**_data)
 
-        try:
-            _ax.xaxis.set_major_locator(
-                MultipleLocator(_data["x_ticks"]["major"])
-            )
-        except KeyError:
-            pass
-        try:
-            _ax.xaxis.set_minor_locator(
-                MultipleLocator(_data["x_ticks"]["minor"])
-            )
-        except KeyError:
-            pass
+        if _draw_func == "plot":
+            _ax.plot(_x, _y, linewidth=0.5)
+        elif _draw_func == "bar":
+            _ax.bar(_x, _y, linewidth=0.5)
+        elif _draw_func == "hist":
+            _ax.hist(_y, bins=10)
 
-        # type of a plot
-        try:
-            if _data["draw_func"] == "plot":
-                _ax.plot(_x, _data["data"], linewidth=0.5)
-                _ax.yaxis.set_major_locator(MultipleLocator(0.5))
-                _ax.yaxis.set_minor_locator(MultipleLocator(.25))
-            elif _data["draw_func"] == "bar":
-                _ax.bar(_x, _data["data"], linewidth=0.5)
-            elif _data["draw_func"] == "hist":
-                _ax.hist(_data["data"], bins=10)
-        except KeyError:
-            pass
-
-        _ax.set(xlabel="sample", ylabel="val", title=_data["title"])
         _ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
     _fig
