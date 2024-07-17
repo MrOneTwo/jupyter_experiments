@@ -217,10 +217,10 @@ def __(
     _fig, _axs = plt.subplots(len(_to_plot), figsize=(8, 16))
     plt.subplots_adjust(hspace=0.8)
 
-    for _i, _data in enumerate(_to_plot):
+    for _ax, _data in zip(_axs, _to_plot):
         # vertical axis
         try:
-            _axs[_i].set_ylim(_data["y_lim"])
+            _ax.set_ylim(_data["y_lim"])
         except KeyError:
             pass
 
@@ -233,25 +233,25 @@ def __(
 
         # axes ticks
         try:
-            _axs[_i].yaxis.set_major_locator(
+            _ax.yaxis.set_major_locator(
                 MultipleLocator(_data["y_ticks"]["major"])
             )
         except KeyError:
             pass
         try:
-            _axs[_i].yaxis.set_minor_locator(
+            _ax.yaxis.set_minor_locator(
                 MultipleLocator(_data["y_ticks"]["minor"])
             )
         except KeyError:
             pass
         try:
-            _axs[_i].xaxis.set_major_locator(
+            _ax.xaxis.set_major_locator(
                 MultipleLocator(_data["x_ticks"]["major"])
             )
         except KeyError:
             pass
         try:
-            _axs[_i].xaxis.set_minor_locator(
+            _ax.xaxis.set_minor_locator(
                 MultipleLocator(_data["x_ticks"]["minor"])
             )
         except KeyError:
@@ -260,16 +260,16 @@ def __(
         # type of a plot
         try:
             if _data["draw_func"] == "plot":
-                _axs[_i].plot(_x, _data["data"], linewidth=0.5)
+                _ax.plot(_x, _data["data"], linewidth=0.5)
             elif _data["draw_func"] == "bar":
-                _axs[_i].bar(_x, _data["data"], linewidth=0.5)
+                _ax.bar(_x, _data["data"], linewidth=0.5)
             elif _data["draw_func"] == "hist":
-                _axs[_i].hist(_data["data"], bins=10)
+                _ax.hist(_data["data"], bins=10)
         except KeyError:
             pass
 
-        _axs[_i].set(xlabel="sample", ylabel="val", title=_data["title"])
-        _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+        _ax.set(xlabel="sample", ylabel="val", title=_data["title"])
+        _ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
 
     _fig
@@ -561,10 +561,10 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
 
     plt.subplots_adjust(hspace=0.8)
 
-    for _i, _data in enumerate(_to_plot):
+    for _ax, _data in zip(_axs, _to_plot):
         # vertical axis
         try:
-            _axs[_i].set_ylim(_data["y_lim"])
+            _ax.set_ylim(_data["y_lim"])
         except KeyError:
             pass
 
@@ -576,13 +576,13 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
             pass
 
         try:
-            _axs[_i].xaxis.set_major_locator(
+            _ax.xaxis.set_major_locator(
                 MultipleLocator(_data["x_ticks"]["major"])
             )
         except KeyError:
             pass
         try:
-            _axs[_i].xaxis.set_minor_locator(
+            _ax.xaxis.set_minor_locator(
                 MultipleLocator(_data["x_ticks"]["minor"])
             )
         except KeyError:
@@ -591,18 +591,18 @@ def __(MultipleLocator, SAMPLE_RATE, data_unpacked, fft, np, plt):
         # type of a plot
         try:
             if _data["draw_func"] == "plot":
-                _axs[_i].plot(_x, _data["data"], linewidth=0.5)
-                _axs[_i].yaxis.set_major_locator(MultipleLocator(0.5))
-                _axs[_i].yaxis.set_minor_locator(MultipleLocator(.25))
+                _ax.plot(_x, _data["data"], linewidth=0.5)
+                _ax.yaxis.set_major_locator(MultipleLocator(0.5))
+                _ax.yaxis.set_minor_locator(MultipleLocator(.25))
             elif _data["draw_func"] == "bar":
-                _axs[_i].bar(_x, _data["data"], linewidth=0.5)
+                _ax.bar(_x, _data["data"], linewidth=0.5)
             elif _data["draw_func"] == "hist":
-                _axs[_i].hist(_data["data"], bins=10)
+                _ax.hist(_data["data"], bins=10)
         except KeyError:
             pass
 
-        _axs[_i].set(xlabel="sample", ylabel="val", title=_data["title"])
-        _axs[_i].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+        _ax.set(xlabel="sample", ylabel="val", title=_data["title"])
+        _ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
     _fig
     return data_float, dt, normalize, normalize_factor
