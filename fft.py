@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.4.3"
+__generated_with = "0.7.5"
 app = marimo.App()
 
 
@@ -446,7 +446,7 @@ def __(mo):
 
 @app.cell
 def __(Path, csv, fft, mo, np, struct, wave):
-    SAMPLES_FILE = "guitar_string_D.wav"
+    SAMPLES_FILE = "waver_abc_44k_32bit.wav"
 
 
     def sound_from_file(filepath: str) -> list:
@@ -589,13 +589,13 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
     _t = np.arange(0, len(_data_to_plot), 1)
 
     # Window out the input signal, to ensure a periodic input data.
-    _window = fft.generate_window_n(_t, 2048, 0.1)
+    _window = fft.generate_window_n(_t, 4096, 0.1)
     # Create an array of bools.
     _window_mask = _window != 0
 
     _harmonics_windowed = fft.fft((data_float * _window)[_window_mask])
     _frequencies = [
-        fft.bin_to_freq(SAMPLE_RATE, k, 2048)
+        fft.bin_to_freq(SAMPLE_RATE, k, 4096)
         for k in range(len(_harmonics_windowed))
     ]
     _frequency_bin_of_interest_max = 24
@@ -605,7 +605,10 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
 
     # TODO(michalc): filter_harmonics work with an array of complex numbers
     # not list of floats.
-    print(fft.filter_harmonics(_windowed_harmonics_mag, 1.2))
+    frequency_filter_threshold = 2.0
+    print(
+        fft.filter_harmonics(_windowed_harmonics_mag, frequency_filter_threshold)
+    )
     print(np.histogram(_windowed_harmonics_mag, bins=10))
 
     _to_plot = [
@@ -649,6 +652,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
             # Every Nth frequency.
             "xticks": _frequencies[::4],
             "xticklabels": _frequencies[::4],
+            "hlines": frequency_filter_threshold,
         },
     ]
 
@@ -661,6 +665,9 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
         _y = _data.pop("data")
         _x = _data.pop("x", np.arange(len(_y)))
         _draw_func = _data.pop("draw_func")
+        if "hlines" in _data:
+            _hlines = _data.pop("hlines")
+            _ax.axhline(_hlines, color="blue", linewidth=0.5)
 
         # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html
         _ax.set(**_data)
@@ -675,7 +682,13 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
         _ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
     _fig
-    return data_float, dt, normalize, normalize_factor
+    return (
+        data_float,
+        dt,
+        frequency_filter_threshold,
+        normalize,
+        normalize_factor,
+    )
 
 
 if __name__ == "__main__":
