@@ -197,6 +197,6 @@ def filter_harmonics(harmonics: npt.NDArray[np.complex128], epsilon: float=0.001
     valid_harmonics = []
     for i, h in enumerate(harmonics):
         if abs(h) > epsilon or abs(h) < -1 * epsilon:
-            valid_harmonics.append({"idx": i, "value": h})
+            valid_harmonics.append({"bin_idx": i, "value": h})
 
     return valid_harmonics

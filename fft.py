@@ -410,7 +410,7 @@ def __(fft, harmonics, mo):
     def result_to_table(data: dict) -> str:
         lines = []
         for element in data:
-            line = f"{element.get('idx'): >5} | {element.get('value')}"
+            line = f"{element.get('bin_idx'): >5} | {element.get('value')}"
             lines.append(line)
 
         return lines
@@ -636,7 +636,6 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
         {
             "data": _windowed_harmonics_mag[:_frequency_bin_of_interest_max],
             "x": _frequencies[:_frequency_bin_of_interest_max],
-            # "xticks": {"major": _frequencies[:_frequency_bin_of_interest_max][1]},
             "title": "DFT",
             "draw_func": "bar",
             "xlabel": "samples",
