@@ -536,29 +536,20 @@ def __(Path, csv, fft, mo, np, struct, wave):
     )
     # BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked = sound_from_file(SAMPLES_FILE)
 
-    # TODO(michalc): delete this, when https://github.com/marimo-team/marimo/issues/632 gets fixed
-    # _wav_base64 = base64.b64encode(_wav_data).decode("utf-8")
-    _wav_base64 = bytes()
+    with open(SAMPLES_FILE, "rb") as _f:
+        audio_player = mo.audio(src=_f)
 
-    # with open(str(Path(SAMPLES_FILE).with_suffix(".wav")), "rb") as _p:
     mo.vstack(
         [
             mo.md(f"Example sound file {SAMPLES_FILE}:"),
-            # mo.audio(src="samples.wav"),
-            # TODOD(michalc): delete this, when https://github.com/marimo-team/marimo/issues/632 gets fixed
-            mo.Html(
-                f"""
-                <audio controls>
-                    <source src="data:audio/wav;base64,{_wav_base64}" type="audio/wav">
-                </audio>
-                """
-            ),
+            audio_player,
         ]
     )
     return (
         BYTES_PER_SAMPLE,
         SAMPLES_FILE,
         SAMPLE_RATE,
+        audio_player,
         data_unpacked,
         sound_from_file,
         sound_from_wav_file,
