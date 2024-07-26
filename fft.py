@@ -652,8 +652,8 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, mo, np, plt):
             "draw_func": "bar",
             "xlabel": "samples",
             # Every Nth frequency.
-            "xticks": _frequencies[::4],
-            "xticklabels": _frequencies[::4],
+            "xticks": [freq for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
+            "xticklabels": ["{:.2f}".format(freq) for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
             "hlines": frequency_filter_threshold,
         },
     ]
@@ -682,9 +682,9 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, mo, np, plt):
             _ax.hist(_y, bins=10)
 
         _ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+        _ax.tick_params(axis='x', labelrotation=45)
 
-    mo.vstack([_fig,
-              mo.md("Fourier...")])
+    mo.vstack([_fig, mo.md("Fourier...")])
     return (
         __harmonics_windowed,
         data_float,
