@@ -148,7 +148,7 @@ def generate_window_n(
     return window_with_padding
 
 
-def params_from_file_name(filename: str):
+def params_from_file_name(filename: str) -> typing.List[int]:
     sample_rate = 32000
     bytes_per_sample = 2
 
