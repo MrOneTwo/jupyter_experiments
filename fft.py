@@ -1,7 +1,7 @@
 import marimo
 
-__generated_with = "0.7.5"
-app = marimo.App()
+__generated_with = "0.7.6"
+app = marimo.App(width="medium")
 
 
 @app.cell
@@ -565,7 +565,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, fft, mo):
 
 
 @app.cell
-def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
+def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, mo, np, plt):
     if BYTES_PER_SAMPLE == 4:
         normalize_factor = np.iinfo(np.int32).max
     elif BYTES_PER_SAMPLE == 2:
@@ -584,23 +584,27 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
     # Create an array of bools.
     _window_mask = _window != 0
 
-    _harmonics_windowed = fft.fft((data_float * _window)[_window_mask])
+    # Perform Fourier analysis on the windowed data.
+    __harmonics_windowed = fft.fft((data_float * _window)[_window_mask])
+    _harmonics_windowed = __harmonics_windowed[: len(__harmonics_windowed) // 2]
     _frequencies = [
         fft.bin_to_freq(SAMPLE_RATE, k, 4096)
         for k in range(len(_harmonics_windowed))
     ]
-    _frequency_bin_of_interest_max = 24
 
-    print(_harmonics_windowed)
     _windowed_harmonics_mag = list(map(abs, _harmonics_windowed))
 
     # TODO(michalc): filter_harmonics work with an array of complex numbers
     # not list of floats.
-    frequency_filter_threshold = 2.0
-    print(
-        fft.filter_harmonics(_windowed_harmonics_mag, frequency_filter_threshold)
+    frequency_filter_threshold = 20.0
+    filtered_harmonics = fft.filter_harmonics(
+        _windowed_harmonics_mag, frequency_filter_threshold
     )
+
+    print(filtered_harmonics)
     print(np.histogram(_windowed_harmonics_mag, bins=10))
+
+    print(len(filtered_harmonics))
 
     _to_plot = [
         {
@@ -634,8 +638,16 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
             "xlabel": "samples",
         },
         {
-            "data": _windowed_harmonics_mag[:_frequency_bin_of_interest_max],
-            "x": _frequencies[:_frequency_bin_of_interest_max],
+            "data": _windowed_harmonics_mag[
+                filtered_harmonics[0]["bin_idx"] : filtered_harmonics[-1][
+                    "bin_idx"
+                ]
+            ],
+            "x": _frequencies[
+                filtered_harmonics[0]["bin_idx"] : filtered_harmonics[-1][
+                    "bin_idx"
+                ]
+            ],
             "title": "DFT",
             "draw_func": "bar",
             "xlabel": "samples",
@@ -648,7 +660,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
 
     _fig, _axs = plt.subplots(len(_to_plot), figsize=(10, 16))
 
-    plt.subplots_adjust(hspace=0.8)
+    plt.subplots_adjust(hspace=0.6)
 
     for _ax, _data in zip(_axs, _to_plot):
         # Remove the keys that the set() function doesn't recognize.
@@ -671,14 +683,27 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fft, np, plt):
 
         _ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
-    _fig
+    mo.vstack([_fig,
+              mo.md("Fourier...")])
     return (
+        __harmonics_windowed,
         data_float,
         dt,
+        filtered_harmonics,
         frequency_filter_threshold,
         normalize,
         normalize_factor,
     )
+
+
+@app.cell
+def __(SAMPLE_RATE, fft, filtered_harmonics, mo):
+    _bins = [i['bin_idx'] for i in filtered_harmonics]
+
+    mo.vstack([mo.md(f"{len(filtered_harmonics)} harmonics meet our criteria: {[fft.bin_to_freq(SAMPLE_RATE, bin, 4096) for bin in _bins]}"),
+               mo.md(f"...")
+              ])
+    return
 
 
 if __name__ == "__main__":
