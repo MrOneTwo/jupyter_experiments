@@ -445,15 +445,12 @@ def __(mo):
 
 
 @app.cell
-def __(Path, fftu, mo, np, struct, wave):
+def __(fftu, mo):
     SAMPLES_FILE = "waver_abc_44k_32bit.wav"
 
 
-
-
-
     BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked = fftu.sound_from_wav_file(
-        SAMPLES_FILE
+        SAMPLES_FILE, chunk=0
     )
     # BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked = fftu.sound_from_file(SAMPLES_FILE)
 
@@ -472,7 +469,6 @@ def __(Path, fftu, mo, np, struct, wave):
         SAMPLE_RATE,
         audio_player,
         data_unpacked,
-        sound_from_file,
     )
 
 

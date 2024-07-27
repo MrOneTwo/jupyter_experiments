@@ -234,7 +234,7 @@ def sound_from_file(filepath: str) -> list[int, int, npt.NDArray[np.float32]]:
     return (bytes_per_sample, sample_rate, data_unpacked)
 
 
-def sound_from_wav_file(filepath: str) -> list[int, int, npt.NDArray[np.float32]]:
+def sound_from_wav_file(filepath: str, chunk: int) -> list[int, int, npt.NDArray[np.float32]]:
     """
     Load a wav file, but expect a file with the same filename
     but .txt extension. The .txt file should be a labels file
@@ -270,11 +270,10 @@ def sound_from_wav_file(filepath: str) -> list[int, int, npt.NDArray[np.float32]
             False
         ), f"The {Path(filepath).with_suffix('.txt')} doesn't exist!"
 
-    i = 0
     wave_file = wave.open(filepath, "r")
-    chunk_size_time = labels[i]["end"] - labels[i]["start"]
+    chunk_size_time = labels[chunk]["end"] - labels[chunk]["start"]
     chunk_size_frames = int(frames_count * (chunk_size_time / duration))
-    wave_file.setpos(int(frames_count * (labels[i]["start"] / duration)))
+    wave_file.setpos(int(frames_count * (labels[chunk]["start"] / duration)))
     if bytes_per_sample == 4:
         data_unpacked = np.frombuffer(
             wave_file.readframes(chunk_size_frames), dtype=np.int32
