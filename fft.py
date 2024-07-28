@@ -97,7 +97,7 @@ def __(mo):
 @app.cell
 def __(mo, np):
     samples_count_slider = mo.ui.slider(
-        start=1, stop=400, value=200, label="Samples count", debounce=True
+        start=1, stop=400, value=400, label="Samples count", debounce=True
     )
     phase_shift_slider = mo.ui.slider(
         start=0.0,
@@ -132,15 +132,17 @@ def __(
 
     importlib.reload(fftu)
 
+    _samples_count = int(samples_count_slider.value)
+
 
     time_base, harmonic01 = fftu.Waveform(
         frequency=4,
         amplitude=1,
         phase_shift=phase_shift_slider.value,
-        resolution=int(samples_count_slider.value),
+        resolution=_samples_count,
     ).get_wave()
     _, harmonic02 = fftu.Waveform(
-        frequency=12, amplitude=2, resolution=int(samples_count_slider.value)
+        frequency=12, amplitude=2, resolution=_samples_count
     ).get_wave()
 
     waveform_pd = pd.DataFrame(
@@ -153,68 +155,72 @@ def __(
     )
     waveform = waveform_pd["sum"]
 
+    window_width = 128
+
     # Here we have the information split over real and imaginary part, depending
     # on if the harmonics resemble cos or sin more.
-    harmonics = fftu.dft(waveform_pd["sum"])
-    # Filter out the almost 0 values. It's especially important for computing the
-    # phase shift, with arctan2. That's because two very small number, divided by
-    # each other, will result in a legit value: 0.00000002/0.00000001 = 2.
-    harmonics[:] = list(map(lambda c: c if abs(c) > 0.0001 else 0.0, harmonics))
+    # Use only 128 samples - basicly square windowing.
+    harmonics = fftu.dft(waveform_pd["sum"][:window_width])
+
     # abs for complex computes magnituted
-    harmonics_mag = abs(harmonics)
+    harmonics_mag = abs(harmonics) / window_width
     harmonics_phase = np.array(
         list(map(lambda c: np.arctan2(c.imag, c.real), harmonics))
     )
 
-    # ax.set_xticks(list(ax.get_xticks()) + extraticks)
-
     _to_plot = [
         {
             "data": waveform_pd["harmonic01"],
-            "y_lim": (
+            "ylim": (
                 waveform_pd["harmonic01"].min() - 0.4,
                 waveform_pd["harmonic01"].max() + 0.4,
             ),
-            "y_ticks": {"minor": 0.5, "major": 1},
-            "x_ticks": {"minor": np.pi * 2, "major": np.pi * 4},
+            "xticks": np.arange(0, np.pi * 140, 8 * np.pi / 2),
             "title": "harmonic 1",
             "draw_func": "plot",
         },
         {
             "data": waveform_pd["harmonic02"],
-            "y_lim": (
+            "ylim": (
                 waveform_pd["harmonic02"].min() - 0.4,
                 waveform_pd["harmonic02"].max() + 0.4,
             ),
-            "y_ticks": {"minor": 0.5, "major": 1},
-            "x_ticks": {"minor": np.pi * 2, "major": np.pi * 4},
+            "xticks": np.arange(0, np.pi * 140, 4 * np.pi),
             "title": "harmonic 2",
             "draw_func": "plot",
         },
         {
             "data": waveform_pd["harmonic01"] + waveform_pd["harmonic02"],
-            "y_lim": (
+            "ylim": (
                 waveform_pd["sum"].min() - 0.4,
                 waveform_pd["sum"].max() + 0.4,
             ),
-            "y_ticks": {"minor": 0.5, "major": 1},
-            "x_ticks": {"minor": np.pi * 2, "major": np.pi * 4},
+            # "yticks": {"minor": 0.5, "major": 1},
+            # "xticks": {"minor": np.pi * 2, "major": np.pi * 4},
             "title": "combined waveform",
             "draw_func": "plot",
         },
         {
+            "data": np.zeros(_samples_count, dtype=np.int8),
+            "data": np.concatenate((np.ones(128, dtype=int), np.zeros(_samples_count - 128, dtype=int))),
+            "title": "window",
+            "draw_func": "plot",
+            "draw_col": "blue"
+        },
+        {
             "data": harmonics_mag,
-            "y_lim": (harmonics_mag.min() - 20, harmonics_mag.max() + 20),
-            "y_ticks": {"minor": 25, "major": 50},
-            "x_ticks_extra": {},
+            # "yticks": {"minor": 25, "major": 50},
+            "xticks": np.arange(0, _samples_count, 4),
+            "xlabel": "samples",
             "title": "harmonics magnitude",
             "draw_func": "bar",
         },
         {
             "data": harmonics_phase,
-            "y_lim": (harmonics_phase.min() - 0.4, harmonics_phase.max() + 0.4),
-            "y_ticks": {"minor": 0.5, "major": 1},
+            "ylim": (harmonics_phase.min() - 0.4, harmonics_phase.max() + 0.4),
+            # "yticks": {"minor": 0.5, "major": 1},
             "title": "harmonics phase",
+            "xlabel": "samples",
             "draw_func": "bar",
         },
     ]
@@ -223,58 +229,31 @@ def __(
     plt.subplots_adjust(hspace=0.8)
 
     for _ax, _data in zip(_axs, _to_plot):
-        # vertical axis
-        try:
-            _ax.set_ylim(_data["y_lim"])
-        except KeyError:
-            pass
+        # Remove the keys that the set() function doesn't recognize.
+        _y = _data.pop("data")
+        _x = _data.pop("x", np.arange(len(_y)))
+        _draw_func = _data.pop("draw_func")
+        if "hlines" in _data:
+            _hlines = _data.pop("hlines")
+            _ax.axhline(_hlines, color="blue", linewidth=0.5)
 
-        # horizontal axis
-        _x = np.arange(len(_data["data"]))
-        try:
-            _x = _data["x"]
-        except KeyError:
-            pass
+        if "draw_col" in _data:
+            _draw_col = _data.pop("draw_col")
+        else:
+            _draw_col = "black"
 
-        # axes ticks
-        try:
-            _ax.yaxis.set_major_locator(
-                MultipleLocator(_data["y_ticks"]["major"])
-            )
-        except KeyError:
-            pass
-        try:
-            _ax.yaxis.set_minor_locator(
-                MultipleLocator(_data["y_ticks"]["minor"])
-            )
-        except KeyError:
-            pass
-        try:
-            _ax.xaxis.set_major_locator(
-                MultipleLocator(_data["x_ticks"]["major"])
-            )
-        except KeyError:
-            pass
-        try:
-            _ax.xaxis.set_minor_locator(
-                MultipleLocator(_data["x_ticks"]["minor"])
-            )
-        except KeyError:
-            pass
+        # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html
+        _ax.set(**_data)
 
-        # type of a plot
-        try:
-            if _data["draw_func"] == "plot":
-                _ax.plot(_x, _data["data"], linewidth=0.5)
-            elif _data["draw_func"] == "bar":
-                _ax.bar(_x, _data["data"], linewidth=0.5)
-            elif _data["draw_func"] == "hist":
-                _ax.hist(_data["data"], bins=10)
-        except KeyError:
-            pass
+        if _draw_func == "plot":
+            _ax.plot(_x, _y, linewidth=0.5, color=_draw_col)
+        elif _draw_func == "bar":
+            _ax.bar(_x, _y, linewidth=0.5)
+        elif _draw_func == "hist":
+            _ax.hist(_y, bins=10)
 
-        _ax.set(xlabel="sample", ylabel="val", title=_data["title"])
         _ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+        _ax.tick_params(axis="x", labelrotation=45)
 
 
     _fig
@@ -289,6 +268,7 @@ def __(
         time_base,
         waveform,
         waveform_pd,
+        window_width,
     )
 
 

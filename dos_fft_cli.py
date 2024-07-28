@@ -2,6 +2,7 @@ import fft_utils as fftu
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+import math
 
 
 SAMPLES_FILE = "waver_abc_44k_32bit.wav"
@@ -38,6 +39,7 @@ def main():
         ]
 
         harmonics_mag = list(map(abs, harmonics))
+        harmonics_power = list(map(np.square, harmonics))
 
         frequency_filter_threshold = 20.0
         filtered_harmonics = fftu.filter_harmonics(
@@ -79,7 +81,18 @@ def main():
                 "xticks": [freq for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
                 "xticklabels": ["{:.2f}".format(freq) for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
                 "hlines": frequency_filter_threshold,
-            }
+            },
+            {
+                "data": harmonics_power,
+                "ylim": (0.0, 100.0),
+                "title": "DFT - harmonics power",
+                "draw_func": "bar",
+                "xlabel": "samples",
+                # Every Nth frequency.
+                "xticks": [freq for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
+                "xticklabels": ["{:.2f}".format(freq) for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
+                "hlines": frequency_filter_threshold,
+            },
         ]
 
         fig, axs = plt.subplots(len(to_plot), figsize=(10, 16))
@@ -111,7 +124,7 @@ def main():
         plt.savefig(name)
         print(f"saving {name}")
 
-    for i in np.arange(0, 0.7, 0.05):
+    for i in np.arange(0, 0.8, 0.2):
         plot_spectrum(i)
 
 
