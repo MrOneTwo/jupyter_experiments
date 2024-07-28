@@ -23,20 +23,24 @@ def main():
     dt = 1.0 / sample_rate
     t = np.arange(0, len(data_to_plot), 1)
 
-    window = fftu.generate_window_n(t, 2048, 0.1)
+    window_size = 2048
+
+    window = fftu.generate_window_n(t, window_size, 0.1)
     window_mask = window != 0
 
     _harmonics = fftu.fft((data_to_plot * window)[window_mask])
     harmonics = _harmonics[:len(_harmonics) // 2]
 
     frequencies = [
-        fftu.bin_to_freq(sample_rate, k, 2048)
+        fftu.bin_to_freq(sample_rate, k, window_size)
         for k in range(len(harmonics))
     ]
 
+    harmonics_mag = list(map(abs, harmonics))
+
     frequency_filter_threshold = 20.0
     filtered_harmonics = fftu.filter_harmonics(
-        harmonics, frequency_filter_threshold
+        harmonics_mag, frequency_filter_threshold
     )
 
     to_plot = [
@@ -65,7 +69,7 @@ def main():
             "xlabel": "samples",
         },
         {
-            "data": harmonics,
+            "data": harmonics_mag,
             "title": "DFT",
             "draw_func": "bar",
             "xlabel": "samples",
@@ -77,7 +81,7 @@ def main():
     ]
 
     fig, axs = plt.subplots(len(to_plot), figsize=(10, 16))
-    plt.subplots_adjust(hspace=0.6)
+    plt.subplots_adjust(hspace=0.4)
 
     for ax, data in zip(axs, to_plot):
         y = data.pop("data")
