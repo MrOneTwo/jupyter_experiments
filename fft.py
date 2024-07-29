@@ -131,18 +131,20 @@ def __(
 
     importlib.reload(fftu)
 
-    _samples_count = int(samples_count_slider.value)
+    _sample_rate = int(samples_count_slider.value)
 
+    _freq1 = 4
+    _freq2 = 12
 
     time_base, harmonic01 = fftu.Waveform(
-        frequency=4,
+        frequency=_freq1,
         amplitude=1,
         phase_shift=phase_shift_slider.value,
-        resolution=_samples_count,
+        resolution=_sample_rate,
         time=2.0
     ).get_wave()
     _, harmonic02 = fftu.Waveform(
-        frequency=12, amplitude=2, resolution=_samples_count, time=2.0
+        frequency=_freq2, amplitude=2, resolution=_sample_rate, time=2.0
     ).get_wave()
 
     waveform_pd = pd.DataFrame(
@@ -155,20 +157,30 @@ def __(
     )
     waveform = waveform_pd["sum"]
 
-    #window_width = 128 * 2
-    # You can use the one here, to show leakage.
-    window_width = 128 * 2 + 8
+
+    # The added constant is there to show leakage.
+    _window_width = 256 + 2
+    # Offset won't affect leakage.
+    _window_offset = 32
+
+    _window = slice(_window_offset, _window_offset + _window_width)
 
     # Here we have the information split over real and imaginary part, depending
     # on if the harmonics resemble cos or sin more.
     # Use only 128 samples - basicly square windowing.
-    harmonics = fftu.dft(waveform_pd["sum"][:window_width])
+    harmonics = fftu.dft(waveform_pd["sum"][_window])
 
     # abs for complex computes magnituted
-    harmonics_mag = abs(harmonics) / window_width
+    harmonics_mag = abs(harmonics) / _window_width
     harmonics_phase = np.array(
         list(map(lambda c: np.arctan2(c.imag, c.real), harmonics))
     )
+
+    _frequencies = [
+        fftu.bin_to_freq(_sample_rate, k, _window_width)
+        for k in range(len(harmonics_mag))
+    ]
+
 
     _to_plot = [
         {
@@ -178,7 +190,7 @@ def __(
                 waveform_pd["harmonic01"].min() - 0.4,
                 waveform_pd["harmonic01"].max() + 0.4,
             ),
-            "title": "harmonic 1",
+            "title": f"harmonic 1, freq: {_freq1}Hz",
             "draw_func": "plot",
             "xlabel": "[s]"
         },
@@ -189,7 +201,7 @@ def __(
                 waveform_pd["harmonic02"].min() - 0.4,
                 waveform_pd["harmonic02"].max() + 0.4,
             ),
-            "title": "harmonic 2",
+            "title": f"harmonic 2, freq: {_freq2}Hz",
             "draw_func": "plot",
             "xlabel": "[s]"
         },
@@ -203,32 +215,24 @@ def __(
             # "xticks": {"minor": np.pi * 2, "major": np.pi * 4},
             "title": "combined waveform",
             "draw_func": "plot",
-            "highlight": (0, window_width),
+            "highlight": (_window_offset, _window_offset + _window_width),
             "xlabel": "[s]"
         },
         {
-            "data": waveform_pd["sum"][:window_width],
+            "data": waveform_pd["sum"][_window],
             "ylim": (
                 waveform_pd["sum"].min() - 0.4,
                 waveform_pd["sum"].max() + 0.4,
             ),
             "title": "sampled waveform",
             "draw_func": "plot",
-            "linestyle": "dotted",
-        },
-        {
-            "data": harmonics_mag,
-            # "yticks": {"minor": 25, "major": 50},
-            "xticks": np.arange(0, _samples_count, 4),
-            "xlabel": "bins",
-            "title": "harmonics magnitude",
-            "draw_func": "bar",
+            "draw_style": "o",
         },
         {
             "data": harmonics_mag[:(len(harmonics_mag) // 2) + 1],
-            # "yticks": {"minor": 25, "major": 50},
-            "xticks": np.arange(0, _samples_count, 4),
-            "xlabel": "bins",
+            "x": _frequencies[:(len(harmonics_mag) // 2) + 1],
+            "xticks": _frequencies[:(len(harmonics_mag) // 2) + 1:3],
+            "xlabel": "[Hz]",
             "title": "harmonics magnitude - unique results",
             "draw_func": "bar",
         },
@@ -257,10 +261,10 @@ def __(
             _highlight = _data.pop("highlight")
             _ax.axvspan(*_highlight, color='blue', alpha=0.15, label='window')
 
-        if "linestyle" in _data:
-            _linestyle = _data.pop("linestyle")
+        if "draw_style" in _data:
+            _draw_style = _data.pop("draw_style")
         else:
-            _linestyle = "solid"
+            _draw_style = None
 
         if "draw_col" in _data:
             _draw_col = _data.pop("draw_col")
@@ -271,7 +275,10 @@ def __(
         _ax.set(**_data)
 
         if _draw_func == "plot":
-            _ax.plot(_x, _y, linewidth=0.5, linestyle=_linestyle, color=_draw_col)
+            if _draw_style:
+                _ax.plot(_x, _y, _draw_style, markersize=1, linewidth=0.5, color=_draw_col)
+            else:
+                _ax.plot(_x, _y, linewidth=0.5, color=_draw_col)
         elif _draw_func == "bar":
             _ax.bar(_x, _y, linewidth=0.5)
         elif _draw_func == "hist":
@@ -293,7 +300,6 @@ def __(
         time_base,
         waveform,
         waveform_pd,
-        window_width,
     )
 
 

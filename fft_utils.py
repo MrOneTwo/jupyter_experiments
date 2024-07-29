@@ -22,7 +22,7 @@ class Waveform:
     time: float = 1.0
 
     def get_wave(self):
-        t = np.arange(0, self.time + self.time / self.resolution, self.time / self.resolution)
+        t = np.arange(0, self.time, 1.0 / self.resolution)
         return t, self.amplitude * np.cos(2 * np.pi * self.frequency * t + self.phase_shift)
 
 
