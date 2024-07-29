@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.7.6"
+__generated_with = "0.7.5"
 app = marimo.App(width="medium")
 
 
@@ -97,19 +97,18 @@ def __(mo):
 @app.cell
 def __(mo, np):
     samples_count_slider = mo.ui.slider(
-        start=1, stop=400, value=400, label="Samples count", debounce=True
+        start=1, stop=512, value=512, label="Samples count", debounce=True
     )
     phase_shift_slider = mo.ui.slider(
         start=0.0,
         stop=np.pi,
         step=0.1,
-        value=1.0,
+        value=0.0,
         label="Phase shift of the first waveform",
         debounce=True,
     )
     mo.vstack([
                mo.md("Lets generate a waveform made out of two simple sinusoids."),
-               mo.md("Notice we're using fully periodic signals here. That's what Fourier Transform expects. If one of the harmonics isn't periodic, the FT will behave strangely. That's why in practice we use windowing."),
                mo.md("The spectrum of the signal is reflected. That's because of the negative frequencies the transform uses. It's normal to just ignore frequencies above the Nyquist frequency."),
                mo.md("Sliders below allow you to this case."),
                mo.md(f"{samples_count_slider}"),
@@ -140,9 +139,10 @@ def __(
         amplitude=1,
         phase_shift=phase_shift_slider.value,
         resolution=_samples_count,
+        time=2.0
     ).get_wave()
     _, harmonic02 = fftu.Waveform(
-        frequency=12, amplitude=2, resolution=_samples_count
+        frequency=12, amplitude=2, resolution=_samples_count, time=2.0
     ).get_wave()
 
     waveform_pd = pd.DataFrame(
@@ -155,7 +155,9 @@ def __(
     )
     waveform = waveform_pd["sum"]
 
-    window_width = 128
+    #window_width = 128 * 2
+    # You can use the one here, to show leakage.
+    window_width = 128 * 2 + 8
 
     # Here we have the information split over real and imaginary part, depending
     # on if the harmonics resemble cos or sin more.
@@ -171,23 +173,25 @@ def __(
     _to_plot = [
         {
             "data": waveform_pd["harmonic01"],
+            "x": time_base,
             "ylim": (
                 waveform_pd["harmonic01"].min() - 0.4,
                 waveform_pd["harmonic01"].max() + 0.4,
             ),
-            "xticks": np.arange(0, np.pi * 140, 8 * np.pi / 2),
             "title": "harmonic 1",
             "draw_func": "plot",
+            "xlabel": "[s]"
         },
         {
             "data": waveform_pd["harmonic02"],
+            "x": time_base,
             "ylim": (
                 waveform_pd["harmonic02"].min() - 0.4,
                 waveform_pd["harmonic02"].max() + 0.4,
             ),
-            "xticks": np.arange(0, np.pi * 140, 4 * np.pi),
             "title": "harmonic 2",
             "draw_func": "plot",
+            "xlabel": "[s]"
         },
         {
             "data": waveform_pd["harmonic01"] + waveform_pd["harmonic02"],
@@ -199,20 +203,33 @@ def __(
             # "xticks": {"minor": np.pi * 2, "major": np.pi * 4},
             "title": "combined waveform",
             "draw_func": "plot",
+            "highlight": (0, window_width),
+            "xlabel": "[s]"
         },
         {
-            "data": np.zeros(_samples_count, dtype=np.int8),
-            "data": np.concatenate((np.ones(128, dtype=int), np.zeros(_samples_count - 128, dtype=int))),
-            "title": "window",
+            "data": waveform_pd["sum"][:window_width],
+            "ylim": (
+                waveform_pd["sum"].min() - 0.4,
+                waveform_pd["sum"].max() + 0.4,
+            ),
+            "title": "sampled waveform",
             "draw_func": "plot",
-            "draw_col": "blue"
+            "linestyle": "dotted",
         },
         {
             "data": harmonics_mag,
             # "yticks": {"minor": 25, "major": 50},
             "xticks": np.arange(0, _samples_count, 4),
-            "xlabel": "samples",
+            "xlabel": "bins",
             "title": "harmonics magnitude",
+            "draw_func": "bar",
+        },
+        {
+            "data": harmonics_mag[:(len(harmonics_mag) // 2) + 1],
+            # "yticks": {"minor": 25, "major": 50},
+            "xticks": np.arange(0, _samples_count, 4),
+            "xlabel": "bins",
+            "title": "harmonics magnitude - unique results",
             "draw_func": "bar",
         },
         {
@@ -220,13 +237,13 @@ def __(
             "ylim": (harmonics_phase.min() - 0.4, harmonics_phase.max() + 0.4),
             # "yticks": {"minor": 0.5, "major": 1},
             "title": "harmonics phase",
-            "xlabel": "samples",
+            "xlabel": "bins",
             "draw_func": "bar",
         },
     ]
 
-    _fig, _axs = plt.subplots(len(_to_plot), figsize=(8, 16))
-    plt.subplots_adjust(hspace=0.8)
+    _fig, _axs = plt.subplots(len(_to_plot), figsize=(8, 20))
+    plt.subplots_adjust(hspace=1.0)
 
     for _ax, _data in zip(_axs, _to_plot):
         # Remove the keys that the set() function doesn't recognize.
@@ -236,6 +253,14 @@ def __(
         if "hlines" in _data:
             _hlines = _data.pop("hlines")
             _ax.axhline(_hlines, color="blue", linewidth=0.5)
+        if "highlight" in _data:
+            _highlight = _data.pop("highlight")
+            _ax.axvspan(*_highlight, color='blue', alpha=0.15, label='window')
+
+        if "linestyle" in _data:
+            _linestyle = _data.pop("linestyle")
+        else:
+            _linestyle = "solid"
 
         if "draw_col" in _data:
             _draw_col = _data.pop("draw_col")
@@ -246,7 +271,7 @@ def __(
         _ax.set(**_data)
 
         if _draw_func == "plot":
-            _ax.plot(_x, _y, linewidth=0.5, color=_draw_col)
+            _ax.plot(_x, _y, linewidth=0.5, linestyle=_linestyle, color=_draw_col)
         elif _draw_func == "bar":
             _ax.bar(_x, _y, linewidth=0.5)
         elif _draw_func == "hist":
@@ -270,6 +295,12 @@ def __(
         waveform_pd,
         window_width,
     )
+
+
+@app.cell
+def __(mo):
+    mo.md("You can see leakage in the graphs above. That's because the frequencies used in the DFT aren't exactly the same as frequencies present in the signal.")
+    return
 
 
 @app.cell
@@ -482,7 +513,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np, plt):
 
     # Perform Fourier analysis on the windowed data.
     __harmonics_windowed = fftu.fft((data_float * _window)[_window_mask])
-    _harmonics_windowed = __harmonics_windowed[: len(__harmonics_windowed) // 2]
+    _harmonics_windowed = __harmonics_windowed[: (len(__harmonics_windowed) // 2) + 1]
     _frequencies = [
         fftu.bin_to_freq(SAMPLE_RATE, k, 4096)
         for k in range(len(_harmonics_windowed))

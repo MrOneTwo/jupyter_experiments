@@ -17,13 +17,13 @@ class Waveform:
     frequency: int
     amplitude: int = 1
     # This will impact how many frequencies FFT analyzes.
-    resolution: int = 200
+    resolution: int = 256
     phase_shift: float = 0
+    time: float = 1.0
 
     def get_wave(self):
-        length = np.pi * 2 * self.frequency
-        t = np.arange(0, length, length / self.resolution)
-        return t, self.amplitude * np.cos(t + self.phase_shift)
+        t = np.arange(0, self.time + self.time / self.resolution, self.time / self.resolution)
+        return t, self.amplitude * np.cos(2 * np.pi * self.frequency * t + self.phase_shift)
 
 
 def dft_only_sin(
