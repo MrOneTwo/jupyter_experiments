@@ -170,7 +170,7 @@ def __(
     # Use only 128 samples - basicly square windowing.
     harmonics = fftu.dft(waveform_pd["sum"][_window])
 
-    # abs for complex computes magnituted
+    # Compute normalized magnitude.
     harmonics_mag = abs(harmonics) / _window_width
     harmonics_phase = np.array(
         list(map(lambda c: np.arctan2(c.imag, c.real), harmonics))
@@ -230,6 +230,8 @@ def __(
             "draw_style": "o",
         },
         {
+            # Since we're plotting only half of the results, we could multiply the magnitude
+            # by 2, because part of the power is stored in that other, symmetric, half.
             "data": harmonics_mag[: (len(harmonics_mag) // 2) + 1],
             "x": _frequencies[: (len(harmonics_mag) // 2) + 1],
             "xticks": _frequencies[: (len(harmonics_mag) // 2) + 1 : 3],
