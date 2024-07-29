@@ -141,7 +141,7 @@ def __(
         amplitude=1,
         phase_shift=phase_shift_slider.value,
         resolution=_sample_rate,
-        time=2.0
+        time=2.0,
     ).get_wave()
     _, harmonic02 = fftu.Waveform(
         frequency=_freq2, amplitude=2, resolution=_sample_rate, time=2.0
@@ -159,9 +159,9 @@ def __(
 
 
     # The added constant is there to show leakage.
-    _window_width = 256 + 2
+    _window_width = 128 + 2
     # Offset won't affect leakage.
-    _window_offset = 32
+    _window_offset = 24
 
     _window = slice(_window_offset, _window_offset + _window_width)
 
@@ -192,7 +192,7 @@ def __(
             ),
             "title": f"harmonic 1, freq: {_freq1}Hz",
             "draw_func": "plot",
-            "xlabel": "[s]"
+            "xlabel": "[s]",
         },
         {
             "data": waveform_pd["harmonic02"],
@@ -203,35 +203,36 @@ def __(
             ),
             "title": f"harmonic 2, freq: {_freq2}Hz",
             "draw_func": "plot",
-            "xlabel": "[s]"
+            "xlabel": "[s]",
         },
         {
-            "data": waveform_pd["harmonic01"] + waveform_pd["harmonic02"],
+            "data": waveform_pd["sum"],
             "ylim": (
                 waveform_pd["sum"].min() - 0.4,
                 waveform_pd["sum"].max() + 0.4,
             ),
-            # "yticks": {"minor": 0.5, "major": 1},
-            # "xticks": {"minor": np.pi * 2, "major": np.pi * 4},
             "title": "combined waveform",
             "draw_func": "plot",
             "highlight": (_window_offset, _window_offset + _window_width),
-            "xlabel": "[s]"
+            "xlabel": "[samples]",
         },
         {
             "data": waveform_pd["sum"][_window],
+            "x": np.arange(_window_offset, _window_offset + _window_width, 1),
+            "xticks": np.arange(_window_offset, _window_offset + _window_width, 4),
             "ylim": (
                 waveform_pd["sum"].min() - 0.4,
                 waveform_pd["sum"].max() + 0.4,
             ),
             "title": "sampled waveform",
+            "xlabel": "[samples]",
             "draw_func": "plot",
             "draw_style": "o",
         },
         {
-            "data": harmonics_mag[:(len(harmonics_mag) // 2) + 1],
-            "x": _frequencies[:(len(harmonics_mag) // 2) + 1],
-            "xticks": _frequencies[:(len(harmonics_mag) // 2) + 1:3],
+            "data": harmonics_mag[: (len(harmonics_mag) // 2) + 1],
+            "x": _frequencies[: (len(harmonics_mag) // 2) + 1],
+            "xticks": _frequencies[: (len(harmonics_mag) // 2) + 1 : 3],
             "xlabel": "[Hz]",
             "title": "harmonics magnitude - unique results",
             "draw_func": "bar",
@@ -246,8 +247,8 @@ def __(
         },
     ]
 
-    _fig, _axs = plt.subplots(len(_to_plot), figsize=(8, 20))
-    plt.subplots_adjust(hspace=1.0)
+    _fig, _axs = plt.subplots(len(_to_plot), figsize=(14, 20))
+    plt.subplots_adjust(hspace=1.2)
 
     for _ax, _data in zip(_axs, _to_plot):
         # Remove the keys that the set() function doesn't recognize.
@@ -259,7 +260,7 @@ def __(
             _ax.axhline(_hlines, color="blue", linewidth=0.5)
         if "highlight" in _data:
             _highlight = _data.pop("highlight")
-            _ax.axvspan(*_highlight, color='blue', alpha=0.15, label='window')
+            _ax.axvspan(*_highlight, color="blue", alpha=0.15, label="window")
 
         if "draw_style" in _data:
             _draw_style = _data.pop("draw_style")
@@ -276,7 +277,14 @@ def __(
 
         if _draw_func == "plot":
             if _draw_style:
-                _ax.plot(_x, _y, _draw_style, markersize=1, linewidth=0.5, color=_draw_col)
+                _ax.plot(
+                    _x,
+                    _y,
+                    _draw_style,
+                    markersize=1,
+                    linewidth=0.5,
+                    color=_draw_col,
+                )
             else:
                 _ax.plot(_x, _y, linewidth=0.5, color=_draw_col)
         elif _draw_func == "bar":
@@ -365,16 +373,16 @@ def __(MultipleLocator, fftu, np, plt, time_base, waveform):
     windowed_harmonics_phase = list(map(lambda c: np.arctan2(c.imag, c.real), harmonics_windowed))
 
 
-    _fig, _axs = plt.subplots(5, figsize=(14, 16))
+    _fig, _axs = plt.subplots(5, figsize=(10, 16))
     plt.subplots_adjust(hspace=0.4)
 
     _axs[0].set_ylim([waveform.min() - 0.4, waveform.max() + 0.4])
-    _axs[0].plot(time_base, waveform, linewidth=0.7, linestyle="solid", marker="o")
+    _axs[0].plot(time_base, waveform, linewidth=0.7, linestyle="solid", marker="o", markersize=1)
     # _axs[0].set(xlabel='sample', ylabel='val', title='Soundwave plot')
     _axs[0].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
     _axs[1].set_ylim([window.min() - 0.4, window.max() + 0.4])
-    _axs[1].plot(time_base, window, linewidth=0.7, linestyle="solid", marker="o")
+    _axs[1].plot(time_base, window, linewidth=0.7, linestyle="solid", marker="o", markersize=1)
     # _axs[1].set(xlabel='sample', ylabel='val', title='Soundwave plot')
     _axs[1].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
 
@@ -603,12 +611,28 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np, plt):
         if "hlines" in _data:
             _hlines = _data.pop("hlines")
             _ax.axhline(_hlines, color="blue", linewidth=0.5)
+        if "highlight" in _data:
+            _highlight = _data.pop("highlight")
+            _ax.axvspan(*_highlight, color='blue', alpha=0.15, label='window')
+
+        if "draw_style" in _data:
+            _draw_style = _data.pop("draw_style")
+        else:
+            _draw_style = None
+
+        if "draw_col" in _data:
+            _draw_col = _data.pop("draw_col")
+        else:
+            _draw_col = "black"
 
         # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html
         _ax.set(**_data)
 
         if _draw_func == "plot":
-            _ax.plot(_x, _y, linewidth=0.5)
+            if _draw_style:
+                _ax.plot(_x, _y, _draw_style, markersize=1, linewidth=0.5, color=_draw_col)
+            else:
+                _ax.plot(_x, _y, linewidth=0.5, color=_draw_col)
         elif _draw_func == "bar":
             _ax.bar(_x, _y, linewidth=0.5)
         elif _draw_func == "hist":
