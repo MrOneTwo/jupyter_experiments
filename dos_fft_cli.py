@@ -5,12 +5,14 @@ import matplotlib
 import math
 
 
-SAMPLES_FILE = "waver_abc_44k_32bit.wav"
+SAMPLES_FILE = "waver_abc_16k_16bit.wav"
 
 
 def main():
     def plot_spectrum(window_pos: float):
         bytes_per_sample, sample_rate, data_unpacked = fftu.sound_from_wav_file(SAMPLES_FILE, chunk=0)
+
+        print(f"Loaded file {SAMPLES_FILE}, bytes per sample {bytes_per_sample}, sampling rate {sample_rate}")
 
         match bytes_per_sample:
             case 4:
@@ -20,12 +22,14 @@ def main():
             case 1:
                 normalize_factor = np.iinfo(np.int8).max
 
+        print(f"Normalizing with a factor of {normalize_factor}")
+
         normalize = lambda x: x / normalize_factor
         data_to_plot = normalize(data_unpacked)
         dt = 1.0 / sample_rate
         t = np.arange(0, len(data_to_plot), 1)
 
-        window_size = 2048
+        window_size = 1024
 
         window = fftu.generate_window_n(t, window_size, window_pos)
         window_mask = window != 0
@@ -38,10 +42,10 @@ def main():
             for k in range(len(harmonics))
         ]
 
-        harmonics_mag = list(map(abs, harmonics))
-        harmonics_power = list(map(np.square, harmonics))
+        harmonics_mag = np.absolute(harmonics)
+        harmonics_power = np.square(harmonics)
 
-        frequency_filter_threshold = 20.0
+        frequency_filter_threshold = 2.0
         filtered_harmonics = fftu.filter_harmonics(
             harmonics_mag, frequency_filter_threshold
         )
@@ -73,7 +77,7 @@ def main():
             },
             {
                 "data": harmonics_mag,
-                "ylim": (0.0, 60.0),
+                "ylim": (0.0, 30.0),
                 "title": "DFT",
                 "draw_func": "bar",
                 "xlabel": "samples",
@@ -99,32 +103,55 @@ def main():
         plt.subplots_adjust(hspace=0.4)
 
         for ax, data in zip(axs, to_plot):
+            # Remove the keys that the set() function doesn't recognize.
             y = data.pop("data")
             x = data.pop("x", np.arange(len(y)))
             draw_func = data.pop("draw_func")
             if "hlines" in data:
                 hlines = data.pop("hlines")
                 ax.axhline(hlines, color="blue", linewidth=0.5)
+            if "highlight" in data:
+                highlight = data.pop("highlight")
+                ax.axvspan(*highlight, color="blue", alpha=0.15, label="window")
 
+            if "draw_style" in data:
+                draw_style = data.pop("draw_style")
+            else:
+                draw_style = None
+
+            if "draw_col" in data:
+                draw_col = data.pop("draw_col")
+            else:
+                draw_col = "black"
+
+            # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html
             ax.set(**data)
 
-            match draw_func:
-                case "plot":
-                    ax.plot(x, y, linewidth=0.5)
-                case "bar":
-                    ax.bar(x, y, linewidth=0.5)
-                case "hist":
-                    pass
-
+            if draw_func == "plot":
+                if draw_style:
+                    ax.plot(
+                        x,
+                        y,
+                        draw_style,
+                        markersize=1,
+                        linewidth=0.5,
+                        color=draw_col,
+                    )
+                else:
+                    ax.plot(x, y, linewidth=0.5, color=draw_col)
+            elif draw_func == "bar":
+                ax.bar(x, y, linewidth=0.5)
+            elif _draw_func == "hist":
+                ax.hist(y, bins=10)
 
             ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
-            ax.tick_params(axis='x', labelrotation=45)
+            ax.tick_params(axis="x", labelrotation=45)
 
         name = f"out_{'%03d' % int(window_pos * 100)}.png"
         plt.savefig(name)
         print(f"saving {name}")
 
-    for i in np.arange(0, 0.8, 0.2):
+    for i in np.arange(0, 0.8, 0.4):
         plot_spectrum(i)
 
 

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.7.5"
+__generated_with = "0.7.16"
 app = marimo.App(width="medium")
 
 
@@ -90,7 +90,7 @@ def __(mo):
 
 @app.cell
 def __(mo):
-    mo.md(r"You can control the samples count for the following waveforms.")
+    mo.md(r"""You can control the samples count for the following waveforms.""")
     return
 
 
@@ -315,7 +315,7 @@ def __(
 
 @app.cell
 def __(mo):
-    mo.md("You can see leakage in the graphs above. That's because the frequencies used in the DFT aren't exactly the same as frequencies present in the signal.")
+    mo.md("""You can see leakage in the graphs above. That's because the frequencies used in the DFT aren't exactly the same as frequencies present in the signal.""")
     return
 
 
@@ -458,7 +458,7 @@ def __(fftu, harmonics, mo):
 
 @app.cell
 def __(mo):
-    mo.md("The spectrum graph is mirrored. That's because the samples of the originally sampled signal match with the sinusoid of those higher frequencies too. The frequencies in the middle is the Nyquist Rate.")
+    mo.md("""The spectrum graph is mirrored. That's because the samples of the originally sampled signal match with the sinusoid of those higher frequencies too. The frequencies in the middle is the Nyquist Rate.""")
     return
 
 
@@ -473,7 +473,7 @@ def __(mo):
 
 @app.cell
 def __(fftu, mo):
-    SAMPLES_FILE = "waver_abc_44k_32bit.wav"
+    SAMPLES_FILE = "waver_abc_16k_16bit.wav"
 
 
     BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked = fftu.sound_from_wav_file(
