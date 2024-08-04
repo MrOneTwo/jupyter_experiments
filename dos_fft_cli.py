@@ -2,11 +2,14 @@ import fft_utils as fftu
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 import math
 
 
 SAMPLES_FILE = "waver_abc_16k_16bit.wav"
 
+GGWAVE_PROTO_BASE_FREQ = 1875.0
+GGWAVE_PROTO_DELTA_FREQ = 46.875
 
 def main():
     def plot_spectrum(window_pos: float):
@@ -43,12 +46,15 @@ def main():
         ]
 
         harmonics_mag = np.absolute(harmonics)
-        harmonics_power = np.square(harmonics)
+        harmonics_power = np.square(np.absolute(harmonics))
 
         frequency_filter_threshold = 2.0
         filtered_harmonics = fftu.filter_harmonics(
             harmonics_mag, frequency_filter_threshold
         )
+
+        # For example 16000 / 2048 == 7.8125 (7.8125 * 6 == 46.875)
+        fft_resolution = sample_rate / window_size
 
         to_plot = [
             {
@@ -77,30 +83,49 @@ def main():
             },
             {
                 "data": harmonics_mag,
-                "ylim": (0.0, 30.0),
+                "x": frequencies,
+                "ylim": (0.0, 20.0),
+                "xlim": (1800, 3400),
                 "title": "DFT",
                 "draw_func": "bar",
-                "xlabel": "samples",
+                "xlabel": "[Hz]",
                 # Every Nth frequency.
-                "xticks": [freq for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
-                "xticklabels": ["{:.2f}".format(freq) for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
+                "xticks": [
+                    freq for freq in
+                    np.arange(GGWAVE_PROTO_BASE_FREQ, GGWAVE_PROTO_BASE_FREQ + 32 * GGWAVE_PROTO_DELTA_FREQ, GGWAVE_PROTO_DELTA_FREQ)
+                ],
+                "xticklabels": [
+                    "{:.2f}".format(freq) for freq in
+                    np.arange(GGWAVE_PROTO_BASE_FREQ, GGWAVE_PROTO_BASE_FREQ + 32 * GGWAVE_PROTO_DELTA_FREQ, GGWAVE_PROTO_DELTA_FREQ)
+                ],
+                "xticksminor": fft_resolution,
                 "hlines": frequency_filter_threshold,
             },
             {
                 "data": harmonics_power,
-                "ylim": (0.0, 100.0),
+                "x": frequencies,
+                #"ylim": (0.0, 100.0),
+                "xlim": (1800, 3400),
                 "title": "DFT - harmonics power",
                 "draw_func": "bar",
-                "xlabel": "samples",
+                "xlabel": "[Hz]",
                 # Every Nth frequency.
-                "xticks": [freq for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
-                "xticklabels": ["{:.2f}".format(freq) for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
+                "xticks": [
+                    freq for freq in
+                    np.arange(GGWAVE_PROTO_BASE_FREQ, GGWAVE_PROTO_BASE_FREQ + 32 * GGWAVE_PROTO_DELTA_FREQ, GGWAVE_PROTO_DELTA_FREQ)
+                ],
+                "xticklabels": [
+                    "{:.2f}".format(freq) for freq in
+                    np.arange(GGWAVE_PROTO_BASE_FREQ, GGWAVE_PROTO_BASE_FREQ + 32 * GGWAVE_PROTO_DELTA_FREQ, GGWAVE_PROTO_DELTA_FREQ)
+                ],
+                "xticksminor": fft_resolution,
                 "hlines": frequency_filter_threshold,
             },
         ]
 
-        fig, axs = plt.subplots(len(to_plot), figsize=(10, 16))
-        plt.subplots_adjust(hspace=0.4)
+        upscale = 4
+        fig, axs = plt.subplots(len(to_plot), figsize=(upscale * 10, upscale * 20))
+        plt.subplots_adjust(hspace=0.8)
 
         for ax, data in zip(axs, to_plot):
             # Remove the keys that the set() function doesn't recognize.
@@ -113,6 +138,11 @@ def main():
             if "highlight" in data:
                 highlight = data.pop("highlight")
                 ax.axvspan(*highlight, color="blue", alpha=0.15, label="window")
+            if "xticksminor" in data:
+                xticksminor = data.pop("xticksminor")
+                ax.xaxis.set_minor_locator(MultipleLocator(xticksminor))
+                ax.tick_params(which='minor', length=6.0)
+                ax.tick_params(which='major', length=15.0, width=2.0)
 
             if "draw_style" in data:
                 draw_style = data.pop("draw_style")
