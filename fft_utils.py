@@ -1,12 +1,19 @@
 from dataclasses import dataclass
 from pathlib import Path
-import numpy as np
-import numpy.typing as npt
 import math
 import wave
 import typing
 import csv
 import struct
+
+import matplotlib.pyplot as plt
+import matplotlib
+import numpy as np
+import numpy.typing as npt
+
+
+GGWAVE_PROTO_BASE_FREQ = 1875.0
+GGWAVE_PROTO_DELTA_FREQ = 46.875
 
 
 @dataclass
@@ -289,3 +296,73 @@ def sound_from_wav_file(filepath: str, chunk: int) -> list[int, int, npt.NDArray
     wave_file.close()
 
     return (bytes_per_sample, framerate, data_unpacked)
+
+
+def plot_from_dict(to_plot: dict):
+    """
+    This function leverages the matplotlib.axes.Axes.set, meaning all the
+    supported arguments can be passed through the to_plot dictionary.
+
+    Not supported arguments need to be handled here explicitly.
+    """
+    upscale = 1
+    fig, axs = plt.subplots(len(to_plot), figsize=(upscale * 10, upscale * 20))
+
+    if upscale == 1:
+        plt.subplots_adjust(hspace=0.8)
+    elif upscale == 2:
+        plt.subplots_adjust(hspace=0.3)
+    elif upscale == 4:
+        plt.subplots_adjust(hspace=0.15)
+
+    for ax, data in zip(axs, to_plot):
+        # Remove the keys that the set() function doesn't recognize.
+        y = data.pop("data")
+        x = data.pop("x", np.arange(len(y)))
+        draw_func = data.pop("draw_func")
+        if "hlines" in data:
+            hlines = data.pop("hlines")
+            ax.axhline(hlines, color="blue", linewidth=0.5)
+        if "highlight" in data:
+            highlight = data.pop("highlight")
+            ax.axvspan(*highlight, color="blue", alpha=0.15, label="window")
+        if "xticksminor" in data:
+            xticksminor = data.pop("xticksminor")
+            ax.xaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(xticksminor))
+            ax.tick_params(which='minor', length=4.0)
+            ax.tick_params(which='major', length=6.0, width=2.0)
+
+        if "draw_style" in data:
+            draw_style = data.pop("draw_style")
+        else:
+            draw_style = None
+
+        if "draw_col" in data:
+            draw_col = data.pop("draw_col")
+        else:
+            draw_col = "black"
+
+        # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html
+        ax.set(**data)
+
+        if draw_func == "plot":
+            if draw_style:
+                ax.plot(
+                    x,
+                    y,
+                    draw_style,
+                    markersize=1,
+                    linewidth=0.5,
+                    color=draw_col,
+                )
+            else:
+                ax.plot(x, y, linewidth=0.5, color=draw_col)
+        elif draw_func == "bar":
+            ax.bar(x, y, linewidth=0.5)
+        elif draw_func == "hist":
+            ax.hist(y, bins=10)
+
+        ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
+        ax.tick_params(axis="x", labelrotation=45)
+
+    return fig

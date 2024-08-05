@@ -118,17 +118,7 @@ def __(mo, np):
 
 
 @app.cell
-def __(
-    fftu,
-    importlib,
-    np,
-    pd,
-    phase_shift_slider,
-    plt,
-    samples_count_slider,
-):
-    from matplotlib.ticker import MultipleLocator, AutoMinorLocator
-
+def __(fftu, importlib, np, pd, phase_shift_slider, samples_count_slider):
     importlib.reload(fftu)
 
     _sample_rate = int(samples_count_slider.value)
@@ -181,6 +171,7 @@ def __(
         for k in range(len(harmonics_mag))
     ]
 
+    _fft_step = _sample_rate / _window_width
 
     _to_plot = [
         {
@@ -238,6 +229,7 @@ def __(
             "xlabel": "[Hz]",
             "title": "harmonics magnitude - unique results",
             "draw_func": "bar",
+            "xticksminor": _fft_step,
         },
         {
             "data": harmonics_phase,
@@ -249,59 +241,10 @@ def __(
         },
     ]
 
-    _fig, _axs = plt.subplots(len(_to_plot), figsize=(14, 20))
-    plt.subplots_adjust(hspace=1.2)
-
-    for _ax, _data in zip(_axs, _to_plot):
-        # Remove the keys that the set() function doesn't recognize.
-        _y = _data.pop("data")
-        _x = _data.pop("x", np.arange(len(_y)))
-        _draw_func = _data.pop("draw_func")
-        if "hlines" in _data:
-            _hlines = _data.pop("hlines")
-            _ax.axhline(_hlines, color="blue", linewidth=0.5)
-        if "highlight" in _data:
-            _highlight = _data.pop("highlight")
-            _ax.axvspan(*_highlight, color="blue", alpha=0.15, label="window")
-
-        if "draw_style" in _data:
-            _draw_style = _data.pop("draw_style")
-        else:
-            _draw_style = None
-
-        if "draw_col" in _data:
-            _draw_col = _data.pop("draw_col")
-        else:
-            _draw_col = "black"
-
-        # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html
-        _ax.set(**_data)
-
-        if _draw_func == "plot":
-            if _draw_style:
-                _ax.plot(
-                    _x,
-                    _y,
-                    _draw_style,
-                    markersize=1,
-                    linewidth=0.5,
-                    color=_draw_col,
-                )
-            else:
-                _ax.plot(_x, _y, linewidth=0.5, color=_draw_col)
-        elif _draw_func == "bar":
-            _ax.bar(_x, _y, linewidth=0.5)
-        elif _draw_func == "hist":
-            _ax.hist(_y, bins=10)
-
-        _ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
-        _ax.tick_params(axis="x", labelrotation=45)
-
+    _fig = fftu.plot_from_dict(_to_plot)
 
     _fig
     return (
-        AutoMinorLocator,
-        MultipleLocator,
         harmonic01,
         harmonic02,
         harmonics,
@@ -362,7 +305,7 @@ def __(mo):
 
 
 @app.cell
-def __(MultipleLocator, fftu, np, plt, time_base, waveform):
+def __(fftu, matplotlib, np, plt, time_base, waveform):
     # Window out the input signal, to ensure a periodic input data.
     window = fftu.generate_window(time_base, 0.6, 0.3, False)
     # Create an array of bools.
@@ -392,22 +335,22 @@ def __(MultipleLocator, fftu, np, plt, time_base, waveform):
         np.arange(len(waveform)), (waveform * window)
     )
     _axs[2].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
-    _axs[2].xaxis.set_major_locator(MultipleLocator(10))
-    _axs[2].xaxis.set_minor_locator(MultipleLocator(5))
+    _axs[2].xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(10))
+    _axs[2].xaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(5))
 
     _axs[3].bar(
         np.arange(len(windowed_harmonics_mag)), windowed_harmonics_mag
     )
     _axs[3].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
-    _axs[3].xaxis.set_major_locator(MultipleLocator(10))
-    _axs[3].xaxis.set_minor_locator(MultipleLocator(5))
+    _axs[3].xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(10))
+    _axs[3].xaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(5))
 
     _axs[4].bar(
         np.arange(len(windowed_harmonics_phase)), windowed_harmonics_phase
     )
     _axs[4].grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
-    _axs[4].xaxis.set_major_locator(MultipleLocator(10))
-    _axs[4].xaxis.set_minor_locator(MultipleLocator(5))
+    _axs[4].xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(10))
+    _axs[4].xaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(5))
 
     _fig
     return (
@@ -508,7 +451,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, fftu, mo):
 
 
 @app.cell
-def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np, plt):
+def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np):
     if BYTES_PER_SAMPLE == 4:
         normalize_factor = np.iinfo(np.int32).max
     elif BYTES_PER_SAMPLE == 2:
@@ -516,33 +459,38 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np, plt):
     elif BYTES_PER_SAMPLE == 1:
         normalize_factor = np.iinfo(np.int8).max
     normalize = lambda x: x / normalize_factor
-    data_float = normalize(data_unpacked)
+    _data_float = normalize(data_unpacked)
 
-    _data_to_plot = data_float
     dt = 1.0 / SAMPLE_RATE
-    _t = np.arange(0, len(_data_to_plot), 1)
+    _t = np.arange(0, len(_data_float), 1)
+
+    _window_size = 2048
 
     # Window out the input signal, to ensure a periodic input data.
-    _window = fftu.generate_window_n(_t, 4096, 0.1)
+    _window = fftu.generate_window_n(_t, _window_size, 0.1)
     # Create an array of bools.
     _window_mask = _window != 0
 
     # Perform Fourier analysis on the windowed data.
-    __harmonics_windowed = fftu.fft((data_float * _window)[_window_mask])
+    __harmonics_windowed = fftu.fft((_data_float * _window)[_window_mask])
     _harmonics_windowed = __harmonics_windowed[: (len(__harmonics_windowed) // 2) + 1]
+
     _frequencies = [
-        fftu.bin_to_freq(SAMPLE_RATE, k, 4096)
+        fftu.bin_to_freq(SAMPLE_RATE, k, _window_size)
         for k in range(len(_harmonics_windowed))
     ]
 
-    _windowed_harmonics_mag = list(map(abs, _harmonics_windowed))
+    _windowed_harmonics_mag = np.absolute(_harmonics_windowed)
 
     # TODO(michalc): filter_harmonics work with an array of complex numbers
     # not list of floats.
-    frequency_filter_threshold = 20.0
+    frequency_filter_threshold = 2.0
     filtered_harmonics = fftu.filter_harmonics(
         _windowed_harmonics_mag, frequency_filter_threshold
     )
+
+    # FFT frequency step.
+    _fft_step = SAMPLE_RATE / _window_size
 
     print(filtered_harmonics)
     print(np.histogram(_windowed_harmonics_mag, bins=10))
@@ -551,7 +499,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np, plt):
 
     _to_plot = [
         {
-            "data": _data_to_plot,
+            "data": _data_float,
             "ylim": (-1.1, 1.1),
             "title": "waveform",
             "draw_func": "plot",
@@ -567,7 +515,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np, plt):
             "xticklabels": [i * 2048 for i in range(10)],
         },
         {
-            "data": (_window * _data_to_plot)[_window_mask],
+            "data": (_window * _data_float)[_window_mask],
             "x": np.arange(len(_window))[_window_mask],
             "ylim": (-1.1, 1.1),
             "title": "waveform windowed",
@@ -581,67 +529,27 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np, plt):
             "xlabel": "samples",
         },
         {
-            "data": _windowed_harmonics_mag[
-                filtered_harmonics[0]["bin_idx"] : filtered_harmonics[-1][
-                    "bin_idx"
-                ]
-            ],
-            "x": _frequencies[
-                filtered_harmonics[0]["bin_idx"] : filtered_harmonics[-1][
-                    "bin_idx"
-                ]
-            ],
+            "data": _windowed_harmonics_mag,
+            "x": _frequencies,
+            "xlim": (1800, 3400),
             "title": "DFT",
             "draw_func": "bar",
-            "xlabel": "samples",
+            "xlabel": "[Hz]",
             # Every Nth frequency.
-            "xticks": [freq for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
-            "xticklabels": ["{:.2f}".format(freq) for freq in np.arange(1875.0, 1875.0 + 32 * 46.875, 46.875)],
+            "xticks": [
+                freq for freq in
+                np.arange(fftu.GGWAVE_PROTO_BASE_FREQ, fftu.GGWAVE_PROTO_BASE_FREQ + 32 * 46.875, 46.875)
+            ],
+            "xticklabels": [
+                "{:.2f}".format(freq) for freq in
+                np.arange(fftu.GGWAVE_PROTO_BASE_FREQ, fftu.GGWAVE_PROTO_BASE_FREQ + 32 * 46.875, 46.875)
+            ],
             "hlines": frequency_filter_threshold,
+            "xticksminor": _fft_step,
         },
     ]
 
-    _fig, _axs = plt.subplots(len(_to_plot), figsize=(10, 16))
-
-    plt.subplots_adjust(hspace=0.6)
-
-    for _ax, _data in zip(_axs, _to_plot):
-        # Remove the keys that the set() function doesn't recognize.
-        _y = _data.pop("data")
-        _x = _data.pop("x", np.arange(len(_y)))
-        _draw_func = _data.pop("draw_func")
-        if "hlines" in _data:
-            _hlines = _data.pop("hlines")
-            _ax.axhline(_hlines, color="blue", linewidth=0.5)
-        if "highlight" in _data:
-            _highlight = _data.pop("highlight")
-            _ax.axvspan(*_highlight, color='blue', alpha=0.15, label='window')
-
-        if "draw_style" in _data:
-            _draw_style = _data.pop("draw_style")
-        else:
-            _draw_style = None
-
-        if "draw_col" in _data:
-            _draw_col = _data.pop("draw_col")
-        else:
-            _draw_col = "black"
-
-        # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html
-        _ax.set(**_data)
-
-        if _draw_func == "plot":
-            if _draw_style:
-                _ax.plot(_x, _y, _draw_style, markersize=1, linewidth=0.5, color=_draw_col)
-            else:
-                _ax.plot(_x, _y, linewidth=0.5, color=_draw_col)
-        elif _draw_func == "bar":
-            _ax.bar(_x, _y, linewidth=0.5)
-        elif _draw_func == "hist":
-            _ax.hist(_y, bins=10)
-
-        _ax.grid(color="k", alpha=0.2, linestyle="-.", linewidth=0.5)
-        _ax.tick_params(axis='x', labelrotation=45)
+    _fig = fftu.plot_from_dict(_to_plot)
 
     mo.vstack([_fig, mo.md("Fourier...")])
     return (

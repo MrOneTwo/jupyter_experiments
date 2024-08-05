@@ -24,11 +24,11 @@ def main():
                 normalize_factor = np.iinfo(np.int16).max
             case 1:
                 normalize_factor = np.iinfo(np.int8).max
+        normalize = lambda x: x / normalize_factor
+        data_to_plot = normalize(data_unpacked)
 
         print(f"Normalizing with a factor of {normalize_factor}")
 
-        normalize = lambda x: x / normalize_factor
-        data_to_plot = normalize(data_unpacked)
         dt = 1.0 / sample_rate
         t = np.arange(0, len(data_to_plot), 1)
 
@@ -38,7 +38,7 @@ def main():
         window_mask = window != 0
 
         _harmonics = fftu.fft((data_to_plot * window)[window_mask])
-        harmonics = _harmonics[:len(_harmonics) // 2]
+        harmonics = _harmonics[: (len(_harmonics) // 2) + 1]
 
         frequencies = [
             fftu.bin_to_freq(sample_rate, k, window_size)
@@ -54,7 +54,7 @@ def main():
         )
 
         # For example 16000 / 2048 == 7.8125 (7.8125 * 6 == 46.875)
-        fft_resolution = sample_rate / window_size
+        fft_step = sample_rate / window_size
 
         to_plot = [
             {
@@ -98,7 +98,7 @@ def main():
                     "{:.2f}".format(freq) for freq in
                     np.arange(GGWAVE_PROTO_BASE_FREQ, GGWAVE_PROTO_BASE_FREQ + 32 * GGWAVE_PROTO_DELTA_FREQ, GGWAVE_PROTO_DELTA_FREQ)
                 ],
-                "xticksminor": fft_resolution,
+                "xticksminor": fft_step,
                 "hlines": frequency_filter_threshold,
             },
             {
@@ -118,7 +118,7 @@ def main():
                     "{:.2f}".format(freq) for freq in
                     np.arange(GGWAVE_PROTO_BASE_FREQ, GGWAVE_PROTO_BASE_FREQ + 32 * GGWAVE_PROTO_DELTA_FREQ, GGWAVE_PROTO_DELTA_FREQ)
                 ],
-                "xticksminor": fft_resolution,
+                "xticksminor": fft_step,
                 "hlines": frequency_filter_threshold,
             },
         ]
