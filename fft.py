@@ -22,6 +22,7 @@ def __():
     import plotnine as p9
 
     import fft_utils as fftu
+    import ggwave as ggw
 
     import importlib
 
@@ -33,6 +34,7 @@ def __():
         base64,
         csv,
         fftu,
+        ggw,
         importlib,
         math,
         matplotlib,
@@ -451,7 +453,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, fftu, mo):
 
 
 @app.cell
-def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np):
+def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, ggw, mo, np):
     if BYTES_PER_SAMPLE == 4:
         normalize_factor = np.iinfo(np.int32).max
     elif BYTES_PER_SAMPLE == 2:
@@ -538,11 +540,11 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np):
             # Every Nth frequency.
             "xticks": [
                 freq for freq in
-                np.arange(fftu.GGWAVE_PROTO_BASE_FREQ, fftu.GGWAVE_PROTO_BASE_FREQ + 32 * 46.875, 46.875)
+                np.arange(ggw.GGWAVE_PROTO_BASE_FREQ, ggw.GGWAVE_PROTO_BASE_FREQ + 32 * ggw.GGWAVE_PROTO_DELTA_FREQ, ggw.GGWAVE_PROTO_DELTA_FREQ)
             ],
             "xticklabels": [
                 "{:.2f}".format(freq) for freq in
-                np.arange(fftu.GGWAVE_PROTO_BASE_FREQ, fftu.GGWAVE_PROTO_BASE_FREQ + 32 * 46.875, 46.875)
+                np.arange(ggw.GGWAVE_PROTO_BASE_FREQ, ggw.GGWAVE_PROTO_BASE_FREQ + 32 * ggw.GGWAVE_PROTO_DELTA_FREQ, ggw.GGWAVE_PROTO_DELTA_FREQ)
             ],
             "hlines": frequency_filter_threshold,
             "xticksminor": _fft_step,
@@ -554,7 +556,6 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np):
     mo.vstack([_fig, mo.md("Fourier...")])
     return (
         __harmonics_windowed,
-        data_float,
         dt,
         filtered_harmonics,
         frequency_filter_threshold,
@@ -567,7 +568,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, mo, np):
 def __(SAMPLE_RATE, fftu, filtered_harmonics, mo):
     _bins = [i['bin_idx'] for i in filtered_harmonics]
 
-    mo.vstack([mo.md(f"{len(filtered_harmonics)} harmonics meet our criteria: {[fftu.bin_to_freq(SAMPLE_RATE, bin, 4096) for bin in _bins]}"),
+    mo.vstack([mo.md(f"{len(filtered_harmonics)} harmonics meet our criteria: {[fftu.bin_to_freq(SAMPLE_RATE, bin, 2048) for bin in _bins]}"),
                mo.md(f"...")
               ])
     return

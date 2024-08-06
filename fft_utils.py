@@ -12,10 +12,6 @@ import numpy as np
 import numpy.typing as npt
 
 
-GGWAVE_PROTO_BASE_FREQ = 1875.0
-GGWAVE_PROTO_DELTA_FREQ = 46.875
-
-
 @dataclass
 class Waveform:
     """
