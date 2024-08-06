@@ -11,13 +11,13 @@ def is_delimiter_start(data: list) -> bool:
 
     ret = True
 
-    for i in range(0, 32, 2):
+    for i in range(0, 16, 1):
         if i % 2 == 0:
             # Previous value, even divided, is bigger than the next.
-            ret = (data[i] / 3) > data[i + 1]
+            ret = (data[2*i] / 3) > data[2*i + 1]
         elif i % 2 == 1:
             # Previous value, even divided, is smaller than the next.
-            ret = (data[i] / 3) < data[i + 1]
+            ret = (data[2*i] / 3) < data[2*i + 1]
 
         if ret == False:
             break

@@ -447,7 +447,7 @@ def __(fftu, mo):
 @app.cell
 def __(BYTES_PER_SAMPLE, SAMPLE_RATE, fftu, mo):
     mo.vstack([mo.md(f"Loaded the {SAMPLE_RATE}Hz, {BYTES_PER_SAMPLE} byte sample data."),
-               mo.md(f"The current cut off frequency is {fftu.bin_to_freq(SAMPLE_RATE, 24, 1024)} Hz")
+               mo.md(f"The current cut off frequency is {fftu.bin_to_freq(SAMPLE_RATE, 1024, 2048)} Hz")
               ])
     return
 
@@ -486,7 +486,7 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, ggw, mo, np):
 
     # TODO(michalc): filter_harmonics work with an array of complex numbers
     # not list of floats.
-    frequency_filter_threshold = 2.0
+    frequency_filter_threshold = 9.0
     filtered_harmonics = fftu.filter_harmonics(
         _windowed_harmonics_mag, frequency_filter_threshold
     )
@@ -524,12 +524,12 @@ def __(BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked, fftu, ggw, mo, np):
             "draw_func": "plot",
             "xlabel": "samples",
         },
-        {
-            "data": _windowed_harmonics_mag[: len(_windowed_harmonics_mag) // 2],
-            "title": "histogram",
-            "draw_func": "hist",
-            "xlabel": "samples",
-        },
+        #{
+        #    "data": _windowed_harmonics_mag[: len(_windowed_harmonics_mag) // 2],
+        #    "title": "histogram",
+        #    "draw_func": "hist",
+        #    "xlabel": "samples",
+        #},
         {
             "data": _windowed_harmonics_mag,
             "x": _frequencies,

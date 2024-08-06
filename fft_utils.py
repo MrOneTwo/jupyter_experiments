@@ -106,6 +106,12 @@ def bin_to_freq(sampling_freq: int, bin_index: int, samples_count: int) -> float
     return freq
 
 
+def freq_to_bin(sampling_freq: int, freq: float, samples_count: int) -> int:
+    base_period = (sampling_freq / samples_count)
+    idx = int(round(freq / base_period))
+    return idx
+
+
 def generate_window(
     t: npt.NDArray[float],
     window_fill: float,
@@ -301,7 +307,7 @@ def plot_from_dict(to_plot: dict):
 
     Not supported arguments need to be handled here explicitly.
     """
-    upscale = 1
+    upscale = 2
     fig, axs = plt.subplots(len(to_plot), figsize=(upscale * 10, upscale * 20))
 
     if upscale == 1:

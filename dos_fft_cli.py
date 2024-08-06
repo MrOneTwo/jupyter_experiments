@@ -47,7 +47,7 @@ def main():
         harmonics_mag = np.absolute(harmonics)
         harmonics_power = np.square(np.absolute(harmonics))
 
-        frequency_filter_threshold = 2.0
+        frequency_filter_threshold = 4.5
         filtered_harmonics = fftu.filter_harmonics(
             harmonics_mag, frequency_filter_threshold
         )
