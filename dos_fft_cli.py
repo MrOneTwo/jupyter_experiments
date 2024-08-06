@@ -11,6 +11,22 @@ SAMPLES_FILE = "waver_abc_16k_16bit.wav"
 GGWAVE_PROTO_BASE_FREQ = 1875.0
 GGWAVE_PROTO_DELTA_FREQ = 46.875
 
+
+def ggwave_freqs_to_data(freqs: list, base_freq: float=1875.0, delta_freq: float=46.875):
+    """
+    ggwave transmits 6 4-bit chunks at the same time.
+    Chunk 0 is between F0 and F0 + 15*dF.
+    Chunk 1 is between F0 + 16*dF and F0 + 31*dF.
+    Chunks end at F0 + 95*dF.
+    The value encoded by a chunk is the N, in F0 + N*dF, masked by 0b1111.
+    """
+    data = bytearray()
+    for freq in freqs:
+        data.append(int(round((freq - base_freq) / delta_freq)))
+
+    return data
+
+
 def main():
     def plot_spectrum(window_pos: float):
         bytes_per_sample, sample_rate, data_unpacked = fftu.sound_from_wav_file(SAMPLES_FILE, chunk=0)
