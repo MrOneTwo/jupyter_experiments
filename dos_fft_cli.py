@@ -12,7 +12,7 @@ SAMPLES_FILE = "waver_abc_16k_16bit.wav"
 
 def main():
     def plot_spectrum(window_pos: float):
-        bytes_per_sample, sample_rate, data_unpacked = fftu.sound_from_wav_file(SAMPLES_FILE, chunk=0)
+        bytes_per_sample, sample_rate, data_unpacked = fftu.sound_from_wav_file(SAMPLES_FILE, chunk=1)
 
         print(f"Loaded file {SAMPLES_FILE}, bytes per sample {bytes_per_sample}, sampling rate {sample_rate}")
 
@@ -51,6 +51,16 @@ def main():
         filtered_harmonics = fftu.filter_harmonics(
             harmonics_mag, frequency_filter_threshold
         )
+
+        # Get frequencies relevant to decoding ggwave data.
+        filtered_harmonics[:] = sorted(filtered_harmonics, key=lambda k: k['value'], reverse=True)
+        ggwave_frequencies = sorted([fftu.bin_to_freq(sample_rate, el['bin_idx'], window_size) for el in filtered_harmonics[:6]])
+        to_data = lambda el: int(((el - ggw.GGWAVE_PROTO_BASE_FREQ) // ggw.GGWAVE_PROTO_DELTA_FREQ) % 16)
+        ggwave_data = ['{:04b}'.format(to_data(el)) for el in ggwave_frequencies]
+
+        for f, d in zip(ggwave_frequencies, ggwave_data):
+            print(f"{f} --> {d}")
+
 
         # For example 16000 / 2048 == 7.8125 (7.8125 * 6 == 46.875)
         fft_step = sample_rate / window_size
@@ -91,11 +101,11 @@ def main():
                 # Every Nth frequency.
                 "xticks": [
                     freq for freq in
-                    np.arange(ggw.GGWAVE_PROTO_BASE_FREQ, ggw.GGWAVE_PROTO_BASE_FREQ + 32 * ggw.GGWAVE_PROTO_DELTA_FREQ, ggw.GGWAVE_PROTO_DELTA_FREQ)
+                    np.arange(ggw.GGWAVE_PROTO_BASE_FREQ, ggw.GGWAVE_PROTO_BASE_FREQ + ggw.GGWAVE_PROTO_DATA_FREQS_COUNT * ggw.GGWAVE_PROTO_DELTA_FREQ, ggw.GGWAVE_PROTO_DELTA_FREQ)
                 ],
                 "xticklabels": [
                     "{:.2f}".format(freq) for freq in
-                    np.arange(ggw.GGWAVE_PROTO_BASE_FREQ, ggw.GGWAVE_PROTO_BASE_FREQ + 32 * ggw.GGWAVE_PROTO_DELTA_FREQ, ggw.GGWAVE_PROTO_DELTA_FREQ)
+                    np.arange(ggw.GGWAVE_PROTO_BASE_FREQ, ggw.GGWAVE_PROTO_BASE_FREQ + ggw.GGWAVE_PROTO_DATA_FREQS_COUNT * ggw.GGWAVE_PROTO_DELTA_FREQ, ggw.GGWAVE_PROTO_DELTA_FREQ)
                 ],
                 "xticksminor": fft_step,
                 "hlines": frequency_filter_threshold,
