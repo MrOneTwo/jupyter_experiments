@@ -418,7 +418,7 @@ def __(mo):
 
 @app.cell
 def __(fftu, mo):
-    SAMPLES_FILE = "waver_abc_16k_16bit.wav"
+    SAMPLES_FILE = "./data/waver_abc_16k_16bit.wav"
 
 
     BYTES_PER_SAMPLE, SAMPLE_RATE, data_unpacked = fftu.sound_from_wav_file(
