@@ -222,14 +222,24 @@ def sound_from_file(filepath: str) -> list[int, int, npt.NDArray[np.float32]]:
         bytes_per_sample = wf.getsampwidth()
         sample_rate = wf.getframerate()
     elif Path(filepath).suffix == ".bin":
-        # Lets make a wave file out of raw samples.
-        data_unpacked = np.asarray(
-            [
-                d[0]
-                for d in struct.iter_unpack("<h", Path(filepath).read_bytes())
-            ]
-        )
+        _data = Path(filepath).read_bytes()
+        bytes_per_sample = 2
+
+        if bytes_per_sample == 1:
+            normalize_factor = np.iinfo(np.uint8).max
+            data_unpacked = np.asarray(struct.unpack(f"<{len(_data)}b", _data))
+        elif bytes_per_sample == 2:
+            normalize_factor = np.iinfo(np.int16).max
+            data_unpacked = np.asarray(struct.unpack(f"<{len(_data)//2}h", _data))
+        elif bytes_per_sample == 4:
+            normalize_factor = np.iinfo(np.int32).max
+            data_unpacked = np.asarray(struct.unpack(f"<{len(_data)//4}i", _data))
+
         sample_rate, bytes_per_sample = params_from_file_name(filepath)
+
+        assert bytes_per_sample in (1, 2, 4)
+        assert sample_rate in (8000, 16000, 32000, 44100)
+
         raw_data_to_wave(
             data_unpacked,
             str(Path(filepath).with_suffix(".wav")),
