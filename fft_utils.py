@@ -164,19 +164,23 @@ def params_from_file_name(filename: str) -> typing.List[int]:
     sample_rate = 32000
     bytes_per_sample = 2
 
-    if "16k" in filename:
+    if "16k" in filename or "16000" in filename:
         sample_rate = 16000
-    elif "32k" in filename:
+    elif "32k" in filename or "32000" in filename:
         sample_rate = 32000
-    elif "44k" in filename:
+    elif "44k" in filename or "44100" in filename:
         sample_rate = 44100
+    else:
+        AssertionError("Couldn't get sampling frequency from file name!")
 
-    if "8bit" in filename:
+    if "8bit" in filename or "_08_" in filename:
         bytes_per_sample = 1
-    elif "16bit" in filename:
+    elif "16bit" in filename or "_16_" in filename:
         bytes_per_sample = 2
-    elif "32bit" in filename:
+    elif "32bit" in filename or "_32_" in filename:
         bytes_per_sample = 4
+    else:
+        AssertionError("Couldn't get bytes per sample from file name!")
 
     return (sample_rate, bytes_per_sample)
 
@@ -223,7 +227,10 @@ def sound_from_file(filepath: str) -> list[int, int, npt.NDArray[np.float32]]:
         sample_rate = wf.getframerate()
     elif Path(filepath).suffix == ".bin":
         _data = Path(filepath).read_bytes()
-        bytes_per_sample = 2
+
+        sample_rate, bytes_per_sample = params_from_file_name(filepath)
+        assert bytes_per_sample in (1, 2, 4)
+        assert sample_rate in (8000, 16000, 32000, 44100)
 
         if bytes_per_sample == 1:
             normalize_factor = np.iinfo(np.uint8).max
@@ -234,11 +241,6 @@ def sound_from_file(filepath: str) -> list[int, int, npt.NDArray[np.float32]]:
         elif bytes_per_sample == 4:
             normalize_factor = np.iinfo(np.int32).max
             data_unpacked = np.asarray(struct.unpack(f"<{len(_data)//4}i", _data))
-
-        sample_rate, bytes_per_sample = params_from_file_name(filepath)
-
-        assert bytes_per_sample in (1, 2, 4)
-        assert sample_rate in (8000, 16000, 32000, 44100)
 
         raw_data_to_wave(
             data_unpacked,
